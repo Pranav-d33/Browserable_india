@@ -936,7 +936,7 @@ The e2e tests automatically set up:
 
 ## 🆘 Support
 
-- 📧 Email: [support@bharat-agents.com](mailto:support@bharat-agents.com)
+- 📧 Email: [support@bharat-agents.com](dhiranpranav72@gmail.com)
 - 🐛 Issues: [GitHub Issues](https://github.com/Pranav-d33/Browserable_india/issues)
 - 📖 Documentation: [Wiki](https://github.com/Pranav-d33/Browserable_india/wiki)
 
