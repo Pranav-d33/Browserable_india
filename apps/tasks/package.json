@@ -43,7 +43,7 @@
     "prisma": "^5.7.1",
     "prom-client": "^15.1.0",
     "redis": "^4.6.12",
-    "supertest": "^6.3.3",
+    "supertest": "^7.1.4",
     "tiktoken": "1.0.22",
     "ulid": "^2.3.0",
     "whatwg-url": "^14.0.0",
