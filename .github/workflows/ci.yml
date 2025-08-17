@@ -109,7 +109,7 @@ jobs:
         continue-on-error: false
 
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           directory: ./apps/tasks/coverage
           flags: tasks
