@@ -39,7 +39,7 @@
     "jose": "^5.2.0",
     "jsonwebtoken": "9.0.2",
     "openai": "5.12.2",
-    "pino-http": "^9.0.0",
+    "pino-http": "^10.5.0",
     "prisma": "^5.7.1",
     "prom-client": "^15.1.0",
     "redis": "^4.6.12",
