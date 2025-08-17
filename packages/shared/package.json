@@ -37,7 +37,7 @@
     "pino": "^8.17.2",
     "pino-pretty": "^10.3.1",
     "prom-client": "^15.1.0",
-    "ulid": "^2.4.0",
+    "ulid": "^3.0.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
