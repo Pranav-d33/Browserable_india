@@ -1,0 +1,17 @@
+# Global owners
+* @Pranav-d33
+
+# Apps
+/apps/tasks/ @Pranav-d33
+/apps/browser/ @Pranav-d33
+
+# Packages
+/packages/shared/ @Pranav-d33
+
+# Infrastructure
+/infra/ @Pranav-d33
+
+# Configuration files
+/.github/ @Pranav-d33
+/package.json @Pranav-d33
+/pnpm-workspace.yaml @Pranav-d33

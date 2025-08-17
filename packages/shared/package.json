@@ -1,0 +1,55 @@
+{
+  "name": "@bharat-agents/shared",
+  "version": "1.0.0",
+  "description": "Shared types and utilities for Bharat Agents",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rimraf dist",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint ../../packages/shared/src --ext .ts",
+    "lint:fix": "eslint ../../packages/shared/src --ext .ts --fix",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@opentelemetry/auto-instrumentations-node": "^0.40.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "^0.48.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.48.0",
+    "@opentelemetry/resources": "^1.18.0",
+    "@opentelemetry/sdk-node": "^0.48.0",
+    "@opentelemetry/semantic-conventions": "^1.18.0",
+    "dotenv-flow": "^3.2.0",
+    "jose": "^5.2.0",
+    "pino": "^8.17.2",
+    "pino-pretty": "^10.3.1",
+    "prom-client": "^15.1.0",
+    "ulid": "^2.4.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/dotenv-flow": "3.3.3",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.8.10",
+    "@vitest/coverage-v8": "^1.0.4",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.2.2",
+    "vitest": "^1.0.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

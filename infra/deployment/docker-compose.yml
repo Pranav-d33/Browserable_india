@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  # Tasks API
+  tasks-api:
+    build:
+      context: ../..
+      dockerfile: apps/tasks/Dockerfile
+    container_name: bharat-agents-tasks
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - HOST=0.0.0.0
+    volumes:
+      - ../../apps/tasks:/app
+      - /app/node_modules
+    networks:
+      - bharat-agents-network
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # Browser API
+  browser-api:
+    build:
+      context: ../..
+      dockerfile: apps/browser/Dockerfile
+    container_name: bharat-agents-browser
+    ports:
+      - '3001:3001'
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - HOST=0.0.0.0
+    volumes:
+      - ../../apps/browser:/app
+      - /app/node_modules
+    networks:
+      - bharat-agents-network
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # Redis for caching and session storage
+  redis:
+    image: redis:7-alpine
+    container_name: bharat-agents-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    networks:
+      - bharat-agents-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # PostgreSQL for persistent data storage
+  postgres:
+    image: postgres:15-alpine
+    container_name: bharat-agents-postgres
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_DB=bharat_agents
+      - POSTGRES_USER=bharat_user
+      - POSTGRES_PASSWORD=bharat_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - bharat-agents-network
+    restart: unless-stopped
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: bharat-agents-nginx
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    networks:
+      - bharat-agents-network
+    depends_on:
+      - tasks-api
+      - browser-api
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  postgres-data:
+
+networks:
+  bharat-agents-network:
+    driver: bridge

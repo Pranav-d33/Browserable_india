@@ -1,0 +1,53 @@
+{
+  "name": "bharat-agents",
+  "version": "1.0.0",
+  "description": "Bharat Agents - A comprehensive automation and task management platform",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r dev",
+    "lint": "npx eslint \"packages/*/src/**/*.ts\" \"apps/*/src/**/*.ts\" --fix",
+    "format": "prettier --write .",
+    "test": "pnpm -r test",
+    "type-check": "tsc --noEmit",
+    "clean": "pnpm -r clean",
+    "prepare": "husky install",
+    "audit": "pnpm audit --audit-level=high",
+    "audit:fix": "pnpm audit --fix"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@commitlint/cli": "^18.4.3",
+    "@commitlint/config-conventional": "^18.4.3",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "eslint-plugin-security": "^2.1.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.1.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.2.2"
+  },
+  "lint-staged": {
+    "*.{js,ts,jsx,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "packageManager": "pnpm@8.15.0"
+}

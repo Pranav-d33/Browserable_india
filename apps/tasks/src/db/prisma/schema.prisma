@@ -1,0 +1,142 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+/// @seed="npx tsx prisma/seed.ts"
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  runs Run[]
+
+  @@map("users")
+}
+
+model Run {
+  id        String    @id @default(cuid())
+  userId    String
+  agent     String
+  status    RunStatus @default(PENDING)
+  input     String
+  output    String?
+  meta      Json      @default("{}")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodes        Node[]
+  artifacts    Artifact[]
+  idempotency  Idempotency?
+  auditLogs    AuditLog[]
+
+  // Indexes
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@map("runs")
+}
+
+model Node {
+  id        String     @id @default(cuid())
+  runId     String
+  kind      String
+  status    NodeStatus @default(PENDING)
+  input     String
+  output    String?
+  startedAt DateTime?
+  finishedAt DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relations
+  run Run @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([runId, createdAt])
+  @@map("nodes")
+}
+
+model Artifact {
+  id       String   @id @default(cuid())
+  runId    String
+  type     String
+  url      String
+  metadata Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  // Relations
+  run Run @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@map("artifacts")
+}
+
+model Idempotency {
+  idempotencyKey String   @id
+  runId          String   @unique
+  createdAt      DateTime @default(now())
+
+  // Relations
+  run Run @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  // Index for cleanup
+  @@index([createdAt])
+  @@map("idempotency")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  runId      String
+  nodeId     String?
+  userId     String?
+  action     String
+  status     String
+  durationMs Int
+  payload    Json?
+  result     Json?
+  createdAt  DateTime @default(now())
+
+  // Relations
+  run Run @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  // Indexes for efficient querying
+  @@index([runId, createdAt])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@index([status, createdAt])
+  @@map("audit_logs")
+}
+
+enum Role {
+  ADMIN
+  USER
+  SERVICE
+}
+
+enum RunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum NodeStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}

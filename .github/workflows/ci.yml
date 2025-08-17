@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '8'
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bharat_agents_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm -w i
+
+      - name: Type check
+        run: pnpm -w type-check
+
+      - name: Lint
+        run: pnpm -w lint
+
+      - name: Setup test environment
+        run: |
+          cd apps/tasks
+          cp env.example .env
+          echo "POSTGRES_URL=postgresql://postgres:postgres@localhost:5432/bharat_agents_test" >> .env
+          echo "REDIS_URL=redis://localhost:6379" >> .env
+          echo "JWT_SECRET=test-jwt-secret-key-for-testing-only-32-chars" >> .env
+          echo "S3_ENDPOINT=http://localhost:9000" >> .env
+          echo "S3_ACCESS_KEY=test" >> .env
+          echo "S3_SECRET_KEY=test" >> .env
+
+      - name: Run database migrations
+        run: |
+          cd apps/tasks
+          pnpm db:migrate
+
+      - name: Test
+        run: pnpm -w test
+
+      - name: Build packages
+        run: pnpm -w build
+
+      - name: Build tasks app
+        run: |
+          cd apps/tasks
+          pnpm build
+
+      - name: Build browser app
+        run: |
+          cd apps/browser
+          pnpm build
+
+      - name: Security audit
+        run: npm audit --audit-level=high
+        continue-on-error: false
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          directory: ./apps/tasks/coverage
+          flags: tasks
+          name: tasks-coverage
