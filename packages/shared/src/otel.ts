@@ -1,5 +1,5 @@
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
+// import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { Resource } from '@opentelemetry/resources';
 import { NodeSDK } from '@opentelemetry/sdk-node';
@@ -37,18 +37,13 @@ export async function startTelemetry(): Promise<void> {
         : {},
     });
 
-    const metricExporter = new OTLPMetricExporter({
-      url:
-        env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/metrics',
-      headers: env.OTEL_EXPORTER_OTLP_HEADERS
-        ? JSON.parse(env.OTEL_EXPORTER_OTLP_HEADERS)
-        : {},
-    });
+    // Metrics exporter initializable later if needed
 
     // Create SDK with auto-instrumentations
     sdk = new NodeSDK({
       resource,
       traceExporter,
+      metricReader: undefined,
       instrumentations: [
         getNodeAutoInstrumentations({
           // Configure auto-instrumentations

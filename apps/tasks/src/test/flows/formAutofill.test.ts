@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { 
-  executeFormAutofill, 
+import {
+  executeFormAutofill,
   generateFormAutofillSteps,
   formAutofillInputSchema,
-  formFieldSchema 
+  formFieldSchema,
 } from '../../flows/formAutofill.js';
 import { AgentRunOutput } from '@bharat-agents/shared';
 
@@ -58,9 +58,7 @@ describe('Form Autofill Flow', () => {
     it('should validate input without submit selector', () => {
       const validInput = {
         url: 'https://example.com/form',
-        fields: [
-          { selector: '#name', value: 'John Doe' },
-        ],
+        fields: [{ selector: '#name', value: 'John Doe' }],
       };
 
       const result = formAutofillInputSchema.safeParse(validInput);
@@ -95,7 +93,7 @@ describe('Form Autofill Flow', () => {
       const steps = generateFormAutofillSteps(input);
 
       expect(steps).toHaveLength(6); // navigate + 2 fields (wait + fill each) + screenshot
-      
+
       // Check navigation step
       expect(steps[0]).toMatchObject({
         name: 'navigate_to_form',
@@ -116,10 +114,10 @@ describe('Form Autofill Flow', () => {
         name: 'fill_field_0',
         type: 'interaction',
         action: 'type',
-        params: { 
-          selector: '#name', 
+        params: {
+          selector: '#name',
           text: 'John Doe',
-          clear: true 
+          clear: true,
         },
       });
 
@@ -134,10 +132,10 @@ describe('Form Autofill Flow', () => {
         name: 'fill_field_1',
         type: 'interaction',
         action: 'type',
-        params: { 
-          selector: '#email', 
+        params: {
+          selector: '#email',
           text: 'john@example.com',
-          clear: true 
+          clear: true,
         },
       });
 
@@ -146,9 +144,9 @@ describe('Form Autofill Flow', () => {
         name: 'take_screenshot',
         type: 'artifact',
         action: 'screenshot',
-        params: { 
+        params: {
           filename: 'form-autofill-{{timestamp}}',
-          fullPage: true 
+          fullPage: true,
         },
       });
     });
@@ -156,16 +154,14 @@ describe('Form Autofill Flow', () => {
     it('should generate steps for form with submit', () => {
       const input = {
         url: 'https://example.com/form',
-        fields: [
-          { selector: '#name', value: 'John Doe' },
-        ],
+        fields: [{ selector: '#name', value: 'John Doe' }],
         submitSelector: '#submit',
       };
 
       const steps = generateFormAutofillSteps(input);
 
       expect(steps).toHaveLength(8); // navigate + field (wait + fill) + submit (wait + click + navigation) + screenshot
-      
+
       // Check submit steps
       expect(steps[4]).toMatchObject({
         name: 'wait_for_submit_button',
@@ -192,9 +188,7 @@ describe('Form Autofill Flow', () => {
     it('should handle single field form', () => {
       const input = {
         url: 'https://example.com/simple-form',
-        fields: [
-          { selector: '#single-field', value: 'test value' },
-        ],
+        fields: [{ selector: '#single-field', value: 'test value' }],
       };
 
       const steps = generateFormAutofillSteps(input);
@@ -218,7 +212,7 @@ describe('Form Autofill Flow', () => {
 
       // Should have: navigate + 3 fields (wait + fill each) + screenshot = 8 steps
       expect(steps).toHaveLength(8);
-      
+
       // Check field order
       expect(steps[1].name).toBe('wait_for_field_0');
       expect(steps[2].name).toBe('fill_field_0');
@@ -265,7 +259,9 @@ describe('Form Autofill Flow', () => {
             id: expect.stringMatching(/screenshot-\d+/),
             name: 'form-autofill-screenshot',
             type: 'image/png',
-            url: expect.stringMatching(/https:\/\/storage\.example\.com\/screenshots\/form-autofill-\d+\.png/),
+            url: expect.stringMatching(
+              /https:\/\/storage\.example\.com\/screenshots\/form-autofill-\d+\.png/
+            ),
             size: 204800,
             createdAt: expect.any(String),
           },
@@ -276,9 +272,7 @@ describe('Form Autofill Flow', () => {
     it('should execute form autofill flow with submit', async () => {
       const input = {
         url: 'https://example.com/form',
-        fields: [
-          { selector: '#name', value: 'John Doe' },
-        ],
+        fields: [{ selector: '#name', value: 'John Doe' }],
         submitSelector: '#submit',
       };
 
@@ -308,7 +302,9 @@ describe('Form Autofill Flow', () => {
             id: expect.stringMatching(/screenshot-\d+/),
             name: 'form-autofill-screenshot',
             type: 'image/png',
-            url: expect.stringMatching(/https:\/\/storage\.example\.com\/screenshots\/form-autofill-\d+\.png/),
+            url: expect.stringMatching(
+              /https:\/\/storage\.example\.com\/screenshots\/form-autofill-\d+\.png/
+            ),
             size: 204800,
             createdAt: expect.any(String),
           },
@@ -319,9 +315,7 @@ describe('Form Autofill Flow', () => {
     it('should handle single field form', async () => {
       const input = {
         url: 'https://example.com/simple-form',
-        fields: [
-          { selector: '#single-field', value: 'test value' },
-        ],
+        fields: [{ selector: '#single-field', value: 'test value' }],
       };
 
       const browserSteps = [];
@@ -364,9 +358,7 @@ describe('Form Autofill Flow', () => {
     it('should handle execution errors gracefully', async () => {
       const input = {
         url: 'https://example.com/form',
-        fields: [
-          { selector: '#name', value: 'John Doe' },
-        ],
+        fields: [{ selector: '#name', value: 'John Doe' }],
       };
 
       const browserSteps = [];

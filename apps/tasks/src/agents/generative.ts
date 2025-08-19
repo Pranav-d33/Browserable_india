@@ -11,7 +11,7 @@ const GenerativeInputSchema = z.object({
 });
 
 // Schema for generative agent output
-const GenerativeOutputSchema = z.object({
+export const GenerativeOutputSchema = z.object({
   text: z.string(),
   inputTokens: z.number(),
   outputTokens: z.number(),
@@ -35,7 +35,12 @@ export class GenerativeAgent extends BaseAgent {
       const validatedInput = GenerativeInputSchema.parse(parsedInput);
 
       logger.info(
-        { runId, nodeId, format: validatedInput.format, hasSchema: !!validatedInput.schema },
+        {
+          runId,
+          nodeId,
+          format: validatedInput.format,
+          hasSchema: !!validatedInput.schema,
+        },
         'Starting generative LLM task'
       );
 
@@ -55,8 +60,8 @@ export class GenerativeAgent extends BaseAgent {
         nodeId,
         'complete',
         { format: validatedInput.format, hasSchema: !!validatedInput.schema },
-        { 
-          success: result.success, 
+        {
+          success: result.success,
           inputTokens: result.inputTokens,
           outputTokens: result.outputTokens,
           cost: result.cost,
@@ -78,7 +83,7 @@ export class GenerativeAgent extends BaseAgent {
       };
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       // Record error
       await this.recordAction(
         runId,
@@ -91,7 +96,12 @@ export class GenerativeAgent extends BaseAgent {
       );
 
       logger.error(
-        { runId, nodeId, error: error instanceof Error ? error.message : String(error), duration },
+        {
+          runId,
+          nodeId,
+          error: error instanceof Error ? error.message : String(error),
+          duration,
+        },
         'Generative LLM task failed'
       );
 
@@ -133,12 +143,12 @@ export class GenerativeAgent extends BaseAgent {
       }
     } catch (error) {
       logger.error(
-        { 
-          runId, 
-          nodeId, 
+        {
+          runId,
+          nodeId,
           format: input.format,
           error: error instanceof Error ? error.message : String(error),
-          duration: Date.now() - startTime 
+          duration: Date.now() - startTime,
         },
         'Content generation failed'
       );
@@ -151,7 +161,16 @@ export class GenerativeAgent extends BaseAgent {
    */
   private async generateText(
     input: z.infer<typeof GenerativeInputSchema>,
-    llm: any,
+    llm: {
+      name: string;
+      getDefaultModel(): string;
+      complete(args: {
+        model: string;
+        prompt: string;
+        temperature: number;
+        maxTokens: number;
+      }): Promise<{ text: string; inputTokens: number; outputTokens: number }>;
+    },
     runId: string,
     nodeId: string
   ): Promise<z.infer<typeof GenerativeOutputSchema>> {
@@ -180,11 +199,11 @@ export class GenerativeAgent extends BaseAgent {
         runId,
         nodeId,
         'text_generated',
-        { 
+        {
           instructions: input.instructions,
           model: llm.getDefaultModel(),
         },
-        { 
+        {
           success: true,
           inputTokens: response.inputTokens,
           outputTokens: response.outputTokens,
@@ -205,7 +224,7 @@ export class GenerativeAgent extends BaseAgent {
       };
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       await this.recordAction(
         runId,
         nodeId,
@@ -215,7 +234,7 @@ export class GenerativeAgent extends BaseAgent {
         'ERR',
         duration
       );
-      
+
       throw error;
     }
   }
@@ -225,14 +244,29 @@ export class GenerativeAgent extends BaseAgent {
    */
   private async generateJSON(
     input: z.infer<typeof GenerativeInputSchema>,
-    llm: any,
+    llm: {
+      name: string;
+      getDefaultModel(): string;
+      complete(args: {
+        model: string;
+        system?: string;
+        prompt: string;
+        temperature: number;
+        maxTokens: number;
+        json?: boolean;
+      }): Promise<{
+        text: string;
+        inputTokens: number;
+        outputTokens: number;
+      }>;
+    },
     runId: string,
     nodeId: string
   ): Promise<z.infer<typeof GenerativeOutputSchema>> {
     const startTime = Date.now();
 
     // Parse schema if provided
-    let schema: z.ZodSchema<any> | undefined;
+    let schema: z.ZodSchema<unknown> | undefined;
     if (input.schema) {
       try {
         // Evaluate the schema string to create a Zod schema
@@ -243,21 +277,31 @@ export class GenerativeAgent extends BaseAgent {
         }
       } catch (schemaError) {
         logger.error(
-          { runId, nodeId, schema: input.schema, error: schemaError instanceof Error ? schemaError.message : String(schemaError) },
+          {
+            runId,
+            nodeId,
+            schema: input.schema,
+            error:
+              schemaError instanceof Error
+                ? schemaError.message
+                : String(schemaError),
+          },
           'Failed to parse schema'
         );
-        throw new Error(`Invalid schema definition: ${schemaError instanceof Error ? schemaError.message : String(schemaError)}`);
+        throw new Error(
+          `Invalid schema definition: ${schemaError instanceof Error ? schemaError.message : String(schemaError)}`
+        );
       }
     }
 
     // Try up to 2 times for JSON generation with schema validation
     let lastError: Error | undefined;
-    
+
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         const response = await llm.complete({
           model: llm.getDefaultModel(),
-          system: schema 
+          system: schema
             ? `You are a helpful assistant that responds with valid JSON only. 
                The response must conform to the following schema: ${input.schema}
                Always respond with a valid JSON object that matches the schema exactly.
@@ -274,10 +318,10 @@ export class GenerativeAgent extends BaseAgent {
         });
 
         // Parse the response as JSON
-        let parsedJson: any;
+        let parsedJson: unknown;
         try {
           parsedJson = JSON.parse(response.text);
-        } catch (parseError) {
+        } catch {
           // Try to extract JSON from the response if it's wrapped in markdown or other text
           const jsonMatch = response.text.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
@@ -295,16 +339,19 @@ export class GenerativeAgent extends BaseAgent {
             if (attempt === 1) {
               // On first attempt, try to fix the schema and retry
               logger.warn(
-                { 
-                  runId, 
-                  nodeId, 
+                {
+                  runId,
+                  nodeId,
                   attempt,
-                  error: validationError instanceof Error ? validationError.message : String(validationError),
-                  response: response.text 
+                  error:
+                    validationError instanceof Error
+                      ? validationError.message
+                      : String(validationError),
+                  response: response.text,
                 },
                 'Schema validation failed, attempting retry with schema fix'
               );
-              
+
               // Try again with a more explicit schema fix prompt
               const fixPrompt = `${input.instructions}
 
@@ -330,13 +377,15 @@ The response must be valid JSON that matches the schema exactly.`;
               try {
                 const fixedJson = JSON.parse(fixResponse.text);
                 parsedJson = schema.parse(fixedJson);
-                
+
                 // Use the fixed response
                 response.text = fixResponse.text;
                 response.inputTokens += fixResponse.inputTokens;
                 response.outputTokens += fixResponse.outputTokens;
               } catch (fixError) {
-                throw new Error(`Schema validation failed after retry: ${fixError instanceof Error ? fixError.message : String(fixError)}`);
+                throw new Error(
+                  `Schema validation failed after retry: ${fixError instanceof Error ? fixError.message : String(fixError)}`
+                );
               }
             } else {
               throw validationError;
@@ -359,13 +408,13 @@ The response must be valid JSON that matches the schema exactly.`;
           runId,
           nodeId,
           'json_generated',
-          { 
+          {
             instructions: input.instructions,
             schema: input.schema,
             model: llm.getDefaultModel(),
             attempt,
           },
-          { 
+          {
             success: true,
             inputTokens: response.inputTokens,
             outputTokens: response.outputTokens,
@@ -386,17 +435,16 @@ The response must be valid JSON that matches the schema exactly.`;
           schema: input.schema,
           success: true,
         };
+      } catch (_e) {
+        lastError = _e instanceof Error ? _e : new Error(String(_e));
 
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-        
         logger.warn(
-          { 
-            runId, 
-            nodeId, 
+          {
+            runId,
+            nodeId,
             attempt,
             error: lastError.message,
-            schema: input.schema 
+            schema: input.schema,
           },
           `JSON generation attempt ${attempt} failed`
         );
@@ -407,12 +455,12 @@ The response must be valid JSON that matches the schema exactly.`;
         } else {
           // Final attempt failed
           const duration = Date.now() - startTime;
-          
+
           await this.recordAction(
             runId,
             nodeId,
             'json_generation_failed',
-            { 
+            {
               instructions: input.instructions,
               schema: input.schema,
               attempts: 2,
@@ -421,7 +469,7 @@ The response must be valid JSON that matches the schema exactly.`;
             'ERR',
             duration
           );
-          
+
           throw lastError;
         }
       }

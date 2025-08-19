@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Response } from 'express';
 import { logger, AgentKind } from '@bharat-agents/shared';
 import { jarvis } from '../orchestrator/jarvis.js';
 import { idempotencyService } from '../services/idempotency.js';
@@ -6,15 +6,15 @@ import { recordTaskCreation } from '../services/metrics.js';
 import { sendErrorResponse } from '../utils/errorResponse.js';
 import { getCurrentUserId } from '../security/auth.js';
 import { AuthenticatedRequest } from '../security/auth.js';
-import { 
-  priceMonitorFlow, 
+import {
+  priceMonitorFlow,
   PriceMonitorInput,
-  priceMonitorSteps 
+  priceMonitorSteps,
 } from '../flows/priceMonitor.js';
-import { 
-  formAutofillFlow, 
+import {
+  formAutofillFlow,
   FormAutofillInput,
-  generateFormAutofillSteps 
+  generateFormAutofillSteps,
 } from '../flows/formAutofill.js';
 
 // =============================================================================
@@ -40,30 +40,38 @@ export const executePriceMonitor = async (
     return;
   }
 
-  logger.info({
-    userId,
-    productUrl: input.productUrl,
-    selector: input.selector,
-    hasIdempotencyKey: !!idempotencyKey,
-  }, 'Executing price monitor flow');
+  logger.info(
+    {
+      userId,
+      productUrl: input.productUrl,
+      selector: input.selector,
+      hasIdempotencyKey: !!idempotencyKey,
+    },
+    'Executing price monitor flow'
+  );
 
   try {
     // Handle idempotency if key is provided
     if (idempotencyKey) {
       if (!idempotencyService.validateKey(idempotencyKey)) {
         sendErrorResponse(req, res, 'Invalid Idempotency-Key', 400, {
-          message: 'Idempotency key must be alphanumeric with hyphens/underscores only',
+          message:
+            'Idempotency key must be alphanumeric with hyphens/underscores only',
         });
         return;
       }
 
-      const idempotencyResult = await idempotencyService.checkIdempotency(idempotencyKey);
-      
+      const idempotencyResult =
+        await idempotencyService.checkIdempotency(idempotencyKey);
+
       if (idempotencyResult.isDuplicate && idempotencyResult.existingRun) {
-        logger.info({
-          idempotencyKey,
-          existingRunId: idempotencyResult.existingRunId,
-        }, 'Returning existing price monitor run due to idempotency key');
+        logger.info(
+          {
+            idempotencyKey,
+            existingRunId: idempotencyResult.existingRunId,
+          },
+          'Returning existing price monitor run due to idempotency key'
+        );
 
         res.status(200).json({
           runId: idempotencyResult.existingRun.id,
@@ -114,11 +122,14 @@ export const executePriceMonitor = async (
       await idempotencyService.storeIdempotency(idempotencyKey, result.runId);
     }
 
-    logger.info({
-      runId: result.runId,
-      status: result.status,
-      productUrl: input.productUrl,
-    }, 'Price monitor flow created successfully');
+    logger.info(
+      {
+        runId: result.runId,
+        status: result.status,
+        productUrl: input.productUrl,
+      },
+      'Price monitor flow created successfully'
+    );
 
     // Record metrics
     recordTaskCreation('BROWSER', result.status);
@@ -133,13 +144,15 @@ export const executePriceMonitor = async (
       artifacts: result.output?.artifacts || [],
       createdAt: new Date().toISOString(),
     });
-
   } catch (error) {
-    logger.error({ error, input, userId }, 'Failed to execute price monitor flow');
-    
+    logger.error(
+      { error, input, userId },
+      'Failed to execute price monitor flow'
+    );
+
     // Record failed task creation
     recordTaskCreation('BROWSER', 'FAILED');
-    
+
     throw error; // Let the error middleware handle it
   }
 };
@@ -167,31 +180,39 @@ export const executeFormAutofill = async (
     return;
   }
 
-  logger.info({
-    userId,
-    url: input.url,
-    fieldsCount: input.fields.length,
-    hasSubmitSelector: !!input.submitSelector,
-    hasIdempotencyKey: !!idempotencyKey,
-  }, 'Executing form autofill flow');
+  logger.info(
+    {
+      userId,
+      url: input.url,
+      fieldsCount: input.fields.length,
+      hasSubmitSelector: !!input.submitSelector,
+      hasIdempotencyKey: !!idempotencyKey,
+    },
+    'Executing form autofill flow'
+  );
 
   try {
     // Handle idempotency if key is provided
     if (idempotencyKey) {
       if (!idempotencyService.validateKey(idempotencyKey)) {
         sendErrorResponse(req, res, 'Invalid Idempotency-Key', 400, {
-          message: 'Idempotency key must be alphanumeric with hyphens/underscores only',
+          message:
+            'Idempotency key must be alphanumeric with hyphens/underscores only',
         });
         return;
       }
 
-      const idempotencyResult = await idempotencyService.checkIdempotency(idempotencyKey);
-      
+      const idempotencyResult =
+        await idempotencyService.checkIdempotency(idempotencyKey);
+
       if (idempotencyResult.isDuplicate && idempotencyResult.existingRun) {
-        logger.info({
-          idempotencyKey,
-          existingRunId: idempotencyResult.existingRunId,
-        }, 'Returning existing form autofill run due to idempotency key');
+        logger.info(
+          {
+            idempotencyKey,
+            existingRunId: idempotencyResult.existingRunId,
+          },
+          'Returning existing form autofill run due to idempotency key'
+        );
 
         res.status(200).json({
           runId: idempotencyResult.existingRun.id,
@@ -247,12 +268,15 @@ export const executeFormAutofill = async (
       await idempotencyService.storeIdempotency(idempotencyKey, result.runId);
     }
 
-    logger.info({
-      runId: result.runId,
-      status: result.status,
-      url: input.url,
-      fieldsCount: input.fields.length,
-    }, 'Form autofill flow created successfully');
+    logger.info(
+      {
+        runId: result.runId,
+        status: result.status,
+        url: input.url,
+        fieldsCount: input.fields.length,
+      },
+      'Form autofill flow created successfully'
+    );
 
     // Record metrics
     recordTaskCreation('BROWSER', result.status);
@@ -267,13 +291,15 @@ export const executeFormAutofill = async (
       artifacts: result.output?.artifacts || [],
       createdAt: new Date().toISOString(),
     });
-
   } catch (error) {
-    logger.error({ error, input, userId }, 'Failed to execute form autofill flow');
-    
+    logger.error(
+      { error, input, userId },
+      'Failed to execute form autofill flow'
+    );
+
     // Record failed task creation
     recordTaskCreation('BROWSER', 'FAILED');
-    
+
     throw error; // Let the error middleware handle it
   }
 };

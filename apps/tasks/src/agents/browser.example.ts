@@ -3,7 +3,7 @@ import { BrowserAgent } from './browser.js';
 /**
  * Example usage of the browser agent
  */
-async function exampleUsage() {
+async function exampleUsage(): Promise<void> {
   console.log('=== Browser Agent Examples ===\n');
 
   const agent = new BrowserAgent();
@@ -36,7 +36,8 @@ async function exampleUsage() {
     runId: 'run-123',
     nodeId: 'node-789',
     input: JSON.stringify({
-      instructions: 'Go to example.com, click the "Get Started" button, and extract the page title',
+      instructions:
+        'Go to example.com, click the "Get Started" button, and extract the page title',
     }),
   });
 
@@ -78,8 +79,16 @@ async function exampleUsage() {
         { action: 'goto', url: 'https://example.com/contact' },
         { action: 'wait', wait: 1000 },
         { action: 'type', selector: 'input[name="name"]', text: 'John Doe' },
-        { action: 'type', selector: 'input[name="email"]', text: 'john@example.com' },
-        { action: 'type', selector: 'textarea[name="message"]', text: 'Hello, this is a test message.' },
+        {
+          action: 'type',
+          selector: 'input[name="email"]',
+          text: 'john@example.com',
+        },
+        {
+          action: 'type',
+          selector: 'textarea[name="message"]',
+          text: 'Hello, this is a test message.',
+        },
         { action: 'click', selector: 'button[type="submit"]' },
         { action: 'wait', wait: 2000 },
         { action: 'screenshot' },
@@ -98,7 +107,8 @@ async function exampleUsage() {
     runId: 'run-123',
     nodeId: 'node-303',
     input: JSON.stringify({
-      instructions: 'Navigate to a page and keep the session alive for further interaction',
+      instructions:
+        'Navigate to a page and keep the session alive for further interaction',
       steps: [
         { action: 'goto', url: 'https://example.com' },
         { action: 'click', selector: 'a[href="/login"]' },
@@ -119,7 +129,7 @@ async function exampleUsage() {
 /**
  * Example of complex web scraping workflow
  */
-async function complexWorkflowExample() {
+async function complexWorkflowExample(): Promise<void> {
   console.log('=== Complex Web Scraping Workflow ===\n');
 
   const agent = new BrowserAgent();
@@ -135,26 +145,26 @@ async function complexWorkflowExample() {
         // Navigate to the site
         { action: 'goto', url: 'https://example-store.com' },
         { action: 'wait', wait: 2000 },
-        
+
         // Search for products
         { action: 'click', selector: '.search-input' },
         { action: 'type', selector: '.search-input', text: 'laptop' },
         { action: 'click', selector: '.search-button' },
         { action: 'wait', wait: 3000 },
-        
+
         // Extract product listings
         { action: 'extract', selector: '.product-grid', extract: true },
-        
+
         // Click on first product
         { action: 'click', selector: '.product-item:first-child' },
         { action: 'wait', wait: 2000 },
-        
+
         // Extract detailed product information
         { action: 'extract', selector: '.product-title', extract: true },
         { action: 'extract', selector: '.product-price', extract: true },
         { action: 'extract', selector: '.product-description', extract: true },
         { action: 'extract', selector: '.product-rating', extract: true },
-        
+
         // Take screenshot of the product page
         { action: 'screenshot' },
       ],
@@ -174,7 +184,7 @@ async function complexWorkflowExample() {
 /**
  * Example of error handling and retry logic
  */
-function errorHandlingExample() {
+function errorHandlingExample(): void {
   console.log('=== Error Handling Examples ===\n');
 
   console.log('The browser agent includes robust error handling:');
@@ -199,14 +209,22 @@ function errorHandlingExample() {
 /**
  * Example of environment configuration
  */
-function configurationExample() {
+function configurationExample(): Promise<void> | void {
   console.log('=== Configuration Examples ===\n');
 
   console.log('Environment variables for browser agent:');
-  console.log(`• BROWSER_MAX_STEPS: ${process.env.BROWSER_MAX_STEPS || '30'} (default)`);
-  console.log(`• BROWSER_MAX_DURATION_MS: ${process.env.BROWSER_MAX_DURATION_MS || '90000'} (default)`);
-  console.log(`• BROWSER_SERVICE_URL: ${process.env.BROWSER_SERVICE_URL || 'http://localhost:3001'}`);
-  console.log(`• ARTIFACT_BASE_URL: ${process.env.ARTIFACT_BASE_URL || 'http://localhost:3000/artifacts'}`);
+  console.log(
+    `• BROWSER_MAX_STEPS: ${process.env.BROWSER_MAX_STEPS || '30'} (default)`
+  );
+  console.log(
+    `• BROWSER_MAX_DURATION_MS: ${process.env.BROWSER_MAX_DURATION_MS || '90000'} (default)`
+  );
+  console.log(
+    `• BROWSER_SERVICE_URL: ${process.env.BROWSER_SERVICE_URL || 'http://localhost:3001'}`
+  );
+  console.log(
+    `• ARTIFACT_BASE_URL: ${process.env.ARTIFACT_BASE_URL || 'http://localhost:3000/artifacts'}`
+  );
   console.log();
 
   console.log('Example configuration:');

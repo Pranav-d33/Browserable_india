@@ -31,12 +31,12 @@ describe('Price Monitor Flow', () => {
 
     it('should extract EUR price with euro sign', () => {
       const result = extractPrice('€45.50');
-      expect(result).toEqual({ price: 45.50, currency: 'EUR' });
+      expect(result).toEqual({ price: 45.5, currency: 'EUR' });
     });
 
     it('should extract GBP price with pound sign', () => {
       const result = extractPrice('£25.00');
-      expect(result).toEqual({ price: 25.00, currency: 'GBP' });
+      expect(result).toEqual({ price: 25.0, currency: 'GBP' });
     });
 
     it('should extract price with currency code after number', () => {
@@ -51,7 +51,7 @@ describe('Price Monitor Flow', () => {
 
     it('should extract price with different currency codes', () => {
       const currencies = ['EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CHF'];
-      
+
       currencies.forEach(currency => {
         const result = extractPrice(`123.45 ${currency}`);
         expect(result).toEqual({ price: 123.45, currency });
@@ -87,7 +87,7 @@ describe('Price Monitor Flow', () => {
 
     it('should return null for zero or negative prices', () => {
       const invalidPrices = ['$0', '$0.00', '-$10', '-10.50'];
-      
+
       invalidPrices.forEach(price => {
         const result = extractPrice(price);
         expect(result).toBeNull();
@@ -137,7 +137,9 @@ describe('Price Monitor Flow', () => {
             id: expect.stringMatching(/screenshot-\d+/),
             name: 'price-monitor-screenshot',
             type: 'image/png',
-            url: expect.stringMatching(/https:\/\/storage\.example\.com\/screenshots\/price-monitor-\d+\.png/),
+            url: expect.stringMatching(
+              /https:\/\/storage\.example\.com\/screenshots\/price-monitor-\d+\.png/
+            ),
             size: 102400,
             createdAt: expect.any(String),
           },
@@ -197,7 +199,9 @@ describe('Price Monitor Flow', () => {
 
       // Verify timestamp is valid ISO string
       expect(() => new Date(result.result.ts)).not.toThrow();
-      expect(result.result.ts).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      expect(result.result.ts).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
+      );
     });
   });
 

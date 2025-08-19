@@ -53,7 +53,12 @@ describe('Error Response Utils', () => {
 
     it('should include details when provided', () => {
       const details = { field: 'test', value: 'invalid' };
-      const response = createErrorResponse(mockRequest, 'Test error', 400, details);
+      const response = createErrorResponse(
+        mockRequest,
+        'Test error',
+        400,
+        details
+      );
 
       expect(response.details).toEqual(details);
     });
@@ -64,7 +69,11 @@ describe('Error Response Utils', () => {
         headers: { 'x-request-id': 'test-request-id-123' },
       } as Request;
 
-      const response = createErrorResponse(reqWithoutTraceId, 'Test error', 500);
+      const response = createErrorResponse(
+        reqWithoutTraceId,
+        'Test error',
+        500
+      );
 
       expect(response.traceId).toBe('test-request-id-123');
     });
@@ -134,7 +143,11 @@ describe('Error Response Utils', () => {
 
   describe('createNotFoundErrorResponse', () => {
     it('should create not found error response with ID', () => {
-      const response = createNotFoundErrorResponse(mockRequest, 'Task', 'task-123');
+      const response = createNotFoundErrorResponse(
+        mockRequest,
+        'Task',
+        'task-123'
+      );
 
       expect(response).toMatchObject({
         error: 'Error',
@@ -192,10 +205,10 @@ describe('Error Response Utils', () => {
 
   describe('createForbiddenErrorResponse', () => {
     it('should create forbidden error response with required roles', () => {
-      const response = createForbiddenErrorResponse(
-        mockRequest,
-        ['ADMIN', 'USER']
-      );
+      const response = createForbiddenErrorResponse(mockRequest, [
+        'ADMIN',
+        'USER',
+      ]);
 
       expect(response).toMatchObject({
         error: 'Error',

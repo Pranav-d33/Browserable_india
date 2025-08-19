@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { JarvisOrchestrator, selectAgentByHeuristics } from '../../orchestrator/jarvis.js';
-import { AgentKind, AgentRunStatus, AgentNodeStatus } from '@bharat-agents/shared';
+import {
+  JarvisOrchestrator,
+  selectAgentByHeuristics,
+} from '../../orchestrator/jarvis.js';
+import {
+  AgentKind,
+  AgentRunStatus,
+  AgentNodeStatus,
+} from '@bharat-agents/shared';
 
 // Mock environment variables
 vi.mock('../../env.js', () => ({
@@ -73,7 +80,7 @@ describe('JarvisOrchestrator', () => {
       const input = {
         prompt: 'Process this data',
         data: { url: 'https://example.com' },
-        context: { action: 'click' }
+        context: { action: 'click' },
       };
       const agent = selectAgentByHeuristics(input);
       expect(agent).toBe(AgentKind.BROWSER);
@@ -114,7 +121,9 @@ describe('JarvisOrchestrator', () => {
         agent: 'UNSUPPORTED' as AgentKind,
       };
 
-      await expect(jarvis.handleCreateRun(request)).rejects.toThrow('Agent kind UNSUPPORTED is not supported');
+      await expect(jarvis.handleCreateRun(request)).rejects.toThrow(
+        'Agent kind UNSUPPORTED is not supported'
+      );
     });
 
     it('should include RBAC metadata in run', async () => {
@@ -155,7 +164,9 @@ describe('JarvisOrchestrator', () => {
 
       const result = await jarvis.handleCreateRun(request);
 
-      await expect(jarvis.getRun(result.runId, 'user456')).rejects.toThrow('Access denied');
+      await expect(jarvis.getRun(result.runId, 'user456')).rejects.toThrow(
+        'Access denied'
+      );
     });
 
     it('should filter runs by user in listRuns', async () => {

@@ -12,13 +12,16 @@ export class CleanupService {
    */
   startCleanupScheduler(): void {
     // Run cleanup every hour
-    this.cleanupInterval = setInterval(async () => {
-      try {
-        await this.performCleanup();
-      } catch (error) {
-        logger.error({ error }, 'Cleanup scheduler failed');
-      }
-    }, 60 * 60 * 1000); // 1 hour
+    this.cleanupInterval = setInterval(
+      async () => {
+        try {
+          await this.performCleanup();
+        } catch (error) {
+          logger.error({ error }, 'Cleanup scheduler failed');
+        }
+      },
+      60 * 60 * 1000
+    ); // 1 hour
 
     logger.info('Started cleanup scheduler');
   }
@@ -43,10 +46,13 @@ export class CleanupService {
     try {
       // Clean up expired idempotency keys
       const deletedKeys = await idempotencyService.cleanupExpiredKeys();
-      
-      logger.info({
-        deletedIdempotencyKeys: deletedKeys,
-      }, 'Cleanup completed');
+
+      logger.info(
+        {
+          deletedIdempotencyKeys: deletedKeys,
+        },
+        'Cleanup completed'
+      );
     } catch (error) {
       logger.error({ error }, 'Cleanup failed');
     }

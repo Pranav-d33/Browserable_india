@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Response } from 'express';
 import { jarvis } from '../orchestrator/jarvis.js';
 import { AgentKind } from '@bharat-agents/shared';
 import { logger } from '@bharat-agents/shared';
@@ -33,7 +33,10 @@ interface CreateRunRequestBody {
 /**
  * Create a new agent run
  */
-export async function createRun(req: AuthenticatedRequest, res: Response): Promise<void> {
+export async function createRun(
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> {
   try {
     const userId = getCurrentUserId(req);
     if (!userId) {
@@ -45,7 +48,7 @@ export async function createRun(req: AuthenticatedRequest, res: Response): Promi
     }
 
     const body = req.body as CreateRunRequestBody;
-    
+
     // Validate required fields
     if (!body.input) {
       res.status(400).json({
@@ -108,13 +111,13 @@ export async function createRun(req: AuthenticatedRequest, res: Response): Promi
         error: result.error,
       });
     }
-
   } catch (error) {
     logger.error('Error creating run:', error);
-    
+
     res.status(500).json({
       error: 'Internal server error',
-      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      message:
+        error instanceof Error ? error.message : 'Unknown error occurred',
     });
   }
 }
@@ -122,7 +125,10 @@ export async function createRun(req: AuthenticatedRequest, res: Response): Promi
 /**
  * Get a run by ID with RBAC enforcement
  */
-export async function getRun(req: AuthenticatedRequest, res: Response): Promise<void> {
+export async function getRun(
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> {
   try {
     const userId = getCurrentUserId(req);
     if (!userId) {
@@ -138,7 +144,7 @@ export async function getRun(req: AuthenticatedRequest, res: Response): Promise<
     logger.info('Getting run', { runId, userId });
 
     const run = await jarvis.getRun(runId, userId);
-    
+
     if (!run) {
       res.status(404).json({
         error: 'Run not found',
@@ -150,10 +156,9 @@ export async function getRun(req: AuthenticatedRequest, res: Response): Promise<
     res.status(200).json({
       run,
     });
-
   } catch (error) {
     logger.error('Error getting run:', error);
-    
+
     if (error instanceof Error && error.message.includes('Access denied')) {
       res.status(403).json({
         error: 'Access denied',
@@ -161,10 +166,11 @@ export async function getRun(req: AuthenticatedRequest, res: Response): Promise<
       });
       return;
     }
-    
+
     res.status(500).json({
       error: 'Internal server error',
-      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      message:
+        error instanceof Error ? error.message : 'Unknown error occurred',
     });
   }
 }
@@ -172,7 +178,10 @@ export async function getRun(req: AuthenticatedRequest, res: Response): Promise<
 /**
  * List runs with RBAC enforcement and pagination
  */
-export async function listRuns(req: AuthenticatedRequest, res: Response): Promise<void> {
+export async function listRuns(
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> {
   try {
     const userId = getCurrentUserId(req);
     if (!userId) {
@@ -185,19 +194,34 @@ export async function listRuns(req: AuthenticatedRequest, res: Response): Promis
 
     // Pagination parameters
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(req.query.limit as string) || 20)
+    );
     const offset = (page - 1) * limit;
     const agentId = req.query.agent as string;
     const cursor = req.query.cursor as string;
 
-    logger.info('Listing runs', { userId, page, limit, offset, agentId, hasCursor: !!cursor });
+    logger.info('Listing runs', {
+      userId,
+      page,
+      limit,
+      offset,
+      agentId,
+      hasCursor: !!cursor,
+    });
 
     let runs;
     let totalCount;
     let nextCursor;
 
     if (agentId) {
-      const result = await jarvis.listRunsByAgent(agentId, limit, userId, cursor);
+      const result = await jarvis.listRunsByAgent(
+        agentId,
+        limit,
+        userId,
+        cursor
+      );
       runs = result.runs;
       totalCount = result.totalCount;
       nextCursor = result.nextCursor;
@@ -224,13 +248,13 @@ export async function listRuns(req: AuthenticatedRequest, res: Response): Promis
         nextCursor,
       },
     });
-
   } catch (error) {
     logger.error('Error listing runs:', error);
-    
+
     res.status(500).json({
       error: 'Internal server error',
-      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      message:
+        error instanceof Error ? error.message : 'Unknown error occurred',
     });
   }
 }
@@ -238,10 +262,13 @@ export async function listRuns(req: AuthenticatedRequest, res: Response): Promis
 /**
  * Get supported agents
  */
-export async function getSupportedAgents(req: AuthenticatedRequest, res: Response): Promise<void> {
+export async function getSupportedAgents(
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> {
   try {
     const agents = jarvis.getSupportedAgents();
-    
+
     res.status(200).json({
       agents: agents.map(agent => ({
         kind: agent,
@@ -249,13 +276,13 @@ export async function getSupportedAgents(req: AuthenticatedRequest, res: Respons
         description: `Agent for ${agent.toLowerCase()} operations`,
       })),
     });
-
   } catch (error) {
     logger.error('Error getting supported agents:', error);
-    
+
     res.status(500).json({
       error: 'Internal server error',
-      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      message:
+        error instanceof Error ? error.message : 'Unknown error occurred',
     });
   }
 }
@@ -263,20 +290,23 @@ export async function getSupportedAgents(req: AuthenticatedRequest, res: Respons
 /**
  * Get run limits configuration
  */
-export async function getRunLimits(req: AuthenticatedRequest, res: Response): Promise<void> {
+export async function getRunLimits(
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> {
   try {
     const limits = jarvis.getRunLimits();
-    
+
     res.status(200).json({
       limits,
     });
-
   } catch (error) {
     logger.error('Error getting run limits:', error);
-    
+
     res.status(500).json({
       error: 'Internal server error',
-      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      message:
+        error instanceof Error ? error.message : 'Unknown error occurred',
     });
   }
 }

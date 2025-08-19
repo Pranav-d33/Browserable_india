@@ -2,9 +2,13 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from '@bharat-agents/shared';
 import { validateRequest } from '../middleware/validateRequest.js';
-import { createTask, getRunDetails, getRunAuditLogs } from '../controllers/taskController.js';
+import {
+  createTask,
+  getRunDetails,
+  getRunAuditLogs,
+} from '../controllers/taskController.js';
 import { createTaskSchema } from '../schemas/validation.js';
-import { authenticateToken, requireUser, requireRole } from '../security/auth.js';
+import { authenticateToken, requireRole } from '../security/auth.js';
 
 const router = Router();
 

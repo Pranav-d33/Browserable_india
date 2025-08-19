@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import type { ErrorRequestHandler } from 'express';
 
 import { logger } from './logger.js';
 
@@ -37,7 +38,7 @@ export class AppError extends Error {
   public readonly type: ErrorType;
   public readonly isOperational: boolean;
   public readonly code?: string;
-  public readonly details?: Record<string, any>;
+  public readonly details?: Record<string, unknown>;
 
   constructor(
     message: string,
@@ -45,7 +46,7 @@ export class AppError extends Error {
     type: ErrorType = ErrorType.INTERNAL,
     isOperational: boolean = true,
     code?: string,
-    details?: Record<string, any>
+    details?: Record<string, unknown>
   ) {
     super(message);
     this.statusCode = statusCode;
@@ -77,7 +78,7 @@ export class AppError extends Error {
 
 // Specific error classes
 export class ValidationError extends AppError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(
       message,
       HttpStatus.BAD_REQUEST,
@@ -126,7 +127,7 @@ export class NotFoundError extends AppError {
 }
 
 export class ConflictError extends AppError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(
       message,
       HttpStatus.CONFLICT,
@@ -163,7 +164,7 @@ export class ExternalServiceError extends AppError {
 }
 
 // Error helper functions
-export const isAppError = (error: any): error is AppError => {
+export const isAppError = (error: unknown): error is AppError => {
   return error instanceof AppError;
 };
 
@@ -180,13 +181,13 @@ export const createErrorMiddleware = (
     includeStack?: boolean;
     logErrors?: boolean;
   } = {}
-) => {
+): ErrorRequestHandler => {
   const {
     includeStack = process.env.NODE_ENV === 'development',
     logErrors = true,
   } = options;
 
-  return (error: Error, req: Request, res: Response, next: NextFunction) => {
+  return (error: Error, req: Request, res: Response, _next: NextFunction) => {
     // Log error if enabled
     if (logErrors) {
       const logData = {
@@ -207,7 +208,7 @@ export const createErrorMiddleware = (
 
     // Handle AppError instances
     if (isAppError(error)) {
-      const response: any = {
+      const response: Record<string, unknown> = {
         message: error.message,
         type: error.type,
         code: error.code,
@@ -225,16 +226,23 @@ export const createErrorMiddleware = (
     }
 
     // Handle Zod validation errors
-    if (error.name === 'ZodError' && (error as any).issues) {
-      const zodError = error as any;
+    if (
+      error &&
+      typeof error === 'object' &&
+      (error as { name?: string }).name === 'ZodError' &&
+      (error as { issues?: unknown }).issues
+    ) {
+      const zodError = error as {
+        issues: Array<{ path: (string | number)[]; message: string }>;
+      };
       const details = zodError.issues.reduce(
-        (acc: Record<string, string[]>, issue: any) => {
+        (acc: Record<string, string[]>, issue) => {
           const path = issue.path.join('.');
           if (!acc[path]) acc[path] = [];
           acc[path].push(issue.message);
           return acc;
         },
-        {}
+        {} as Record<string, string[]>
       );
 
       return res.status(HttpStatus.BAD_REQUEST).json({
@@ -253,7 +261,7 @@ export const createErrorMiddleware = (
         ? 'Internal server error'
         : error.message;
 
-    const response: any = {
+    const response: Record<string, unknown> = {
       message,
       type: ErrorType.INTERNAL,
       code: 'INTERNAL_ERROR',
@@ -268,7 +276,9 @@ export const createErrorMiddleware = (
 };
 
 // Async error wrapper for Express routes
-export const asyncHandler = (fn: Function) => {
+export const asyncHandler = (
+  fn: (req: Request, res: Response, next: NextFunction) => unknown
+) => {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };

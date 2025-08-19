@@ -21,7 +21,7 @@ const BrowserInputSchema = z.object({
 });
 
 // Schema for browser output
-const BrowserOutputSchema = z.object({
+export const BrowserOutputSchema = z.object({
   url: z.string().optional(),
   title: z.string().optional(),
   screenshot: z.string().optional(),
@@ -57,12 +57,19 @@ export class BrowserAgent extends BaseAgent {
 
       // Get environment limits
       const maxSteps = parseInt(process.env.BROWSER_MAX_STEPS || '30', 10);
-      const maxDuration = parseInt(process.env.BROWSER_MAX_DURATION_MS || '90000', 10);
+      const maxDuration = parseInt(
+        process.env.BROWSER_MAX_DURATION_MS || '90000',
+        10
+      );
 
       // Generate steps if not provided
       let steps = validatedInput.steps;
       if (!steps) {
-        steps = await this.generateSteps(validatedInput.instructions, runId, nodeId);
+        steps = await this.generateSteps(
+          validatedInput.instructions,
+          runId,
+          nodeId
+        );
       }
 
       // Validate step count
@@ -86,13 +93,15 @@ export class BrowserAgent extends BaseAgent {
 
       return {
         output: JSON.stringify(result),
-        artifacts: result.screenshot ? [
-          {
-            type: 'image/png',
-            url: result.screenshot,
-            metadata: { step: 'final_screenshot' },
-          }
-        ] : undefined,
+        artifacts: result.screenshot
+          ? [
+              {
+                type: 'image/png',
+                url: result.screenshot,
+                metadata: { step: 'final_screenshot' },
+              },
+            ]
+          : undefined,
         meta: {
           steps: steps.length,
           duration: Date.now() - startTime,
@@ -101,7 +110,7 @@ export class BrowserAgent extends BaseAgent {
       };
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       // Record error
       await this.recordAction(
         runId,
@@ -114,7 +123,12 @@ export class BrowserAgent extends BaseAgent {
       );
 
       logger.error(
-        { runId, nodeId, error: error instanceof Error ? error.message : String(error), duration },
+        {
+          runId,
+          nodeId,
+          error: error instanceof Error ? error.message : String(error),
+          duration,
+        },
         'Browser automation failed'
       );
 
@@ -182,7 +196,7 @@ Example:
     let sessionId: string | undefined;
     let currentUrl: string | undefined;
     let currentTitle: string | undefined;
-    let extractedData: Record<string, any> = {};
+    const extractedData: Record<string, unknown> = {};
     let screenshotUrl: string | undefined;
 
     const startTime = Date.now();
@@ -206,15 +220,22 @@ Example:
 
         try {
           await this.executeStep(client, sessionId, step, runId, nodeId, i);
-          
+
           // Update current state
           if (step.action === 'goto' && step.url) {
             currentUrl = step.url;
           }
-          
+
           // Extract data if requested
           if (step.extract && step.selector) {
-            const extracted = await this.extractData(client, sessionId, step.selector, runId, nodeId, i);
+            const extracted = await this.extractData(
+              client,
+              sessionId,
+              step.selector,
+              runId,
+              nodeId,
+              i
+            );
             extractedData[step.selector] = extracted;
           }
 
@@ -227,40 +248,52 @@ Example:
             'OK',
             Date.now() - stepStartTime
           );
-
         } catch (stepError) {
           await this.recordAction(
             runId,
             nodeId,
             'step_failed',
             { stepIndex: i, step },
-            { error: stepError instanceof Error ? stepError.message : String(stepError) },
+            {
+              error:
+                stepError instanceof Error
+                  ? stepError.message
+                  : String(stepError),
+            },
             'ERR',
             Date.now() - stepStartTime
           );
-          
+
           throw stepError;
         }
       }
 
-             // Take final screenshot
-       if (sessionId) {
-         const screenshotAction = await client.screenshot(sessionId, 'current');
-         if (screenshotAction.result?.screenshot) {
-           // In a real implementation, we would download the screenshot from the URL
-           // For now, we'll store the screenshot URL as metadata
-           screenshotUrl = screenshotAction.result.screenshot;
-         }
+      // Take final screenshot
+      if (sessionId) {
+        const screenshotAction = await client.screenshot(sessionId, 'current');
+        if (screenshotAction.result?.screenshot) {
+          // In a real implementation, we would download the screenshot from the URL
+          // For now, we'll store the screenshot URL as metadata
+          screenshotUrl = screenshotAction.result.screenshot;
+        }
 
-         // Get current page info from the last action
-         try {
-           // We'll use the last action's URL as current URL
-           // In a real implementation, we would have a method to get current page info
-           currentUrl = steps.length > 0 ? steps[steps.length - 1].url : undefined;
-         } catch (error) {
-           logger.warn({ runId, nodeId, error: error instanceof Error ? error.message : String(error) }, 'Failed to get page info');
-         }
-       }
+        // Get current page info from the last action
+        try {
+          // We'll use the last action's URL as current URL
+          // In a real implementation, we would have a method to get current page info
+          currentUrl =
+            steps.length > 0 ? steps[steps.length - 1].url : undefined;
+        } catch (error) {
+          logger.warn(
+            {
+              runId,
+              nodeId,
+              error: error instanceof Error ? error.message : String(error),
+            },
+            'Failed to get page info'
+          );
+        }
+      }
 
       return {
         url: currentUrl,
@@ -270,15 +303,24 @@ Example:
         steps,
         success: true,
       };
-
     } finally {
       // Close session unless keepAlive is true
       if (sessionId) {
         try {
           await client.closeSession(sessionId);
-          await this.recordAction(runId, nodeId, 'session_closed', { sessionId });
+          await this.recordAction(runId, nodeId, 'session_closed', {
+            sessionId,
+          });
         } catch (error) {
-          logger.warn({ runId, nodeId, sessionId, error: error instanceof Error ? error.message : String(error) }, 'Failed to close session');
+          logger.warn(
+            {
+              runId,
+              nodeId,
+              sessionId,
+              error: error instanceof Error ? error.message : String(error),
+            },
+            'Failed to close session'
+          );
         }
       }
     }
@@ -305,33 +347,46 @@ Example:
           break;
 
         case 'click':
-          if (!step.selector) throw new Error('Selector required for click action');
+          if (!step.selector)
+            throw new Error('Selector required for click action');
           // For click, we need a URL - we'll use the current page or a default
           await client.click(sessionId, 'current', step.selector);
           break;
 
         case 'type':
-          if (!step.selector) throw new Error('Selector required for type action');
+          if (!step.selector)
+            throw new Error('Selector required for type action');
           if (!step.text) throw new Error('Text required for type action');
           await client.type(sessionId, 'current', step.selector, step.text);
           break;
 
-        case 'wait':
+        case 'wait': {
           const waitTime = step.wait || 1000;
           await client.waitFor(sessionId, 'current', undefined, waitTime);
           break;
+        }
 
         case 'screenshot':
           await client.screenshot(sessionId, 'current');
           break;
 
         case 'extract':
-          if (!step.selector) throw new Error('Selector required for extract action');
-          await this.extractData(client, sessionId, step.selector, runId, nodeId, stepIndex);
+          if (!step.selector)
+            throw new Error('Selector required for extract action');
+          await this.extractData(
+            client,
+            sessionId,
+            step.selector,
+            runId,
+            nodeId,
+            stepIndex
+          );
           break;
 
         default:
-          throw new Error(`Unknown action: ${(step as any).action}`);
+          throw new Error(
+            `Unknown action: ${String((step as unknown as { action?: unknown }).action)}`
+          );
       }
 
       await this.recordAction(
@@ -343,7 +398,6 @@ Example:
         'OK',
         Date.now() - stepStartTime
       );
-
     } catch (error) {
       await this.recordAction(
         runId,
@@ -368,13 +422,17 @@ Example:
     runId: string,
     nodeId: string,
     stepIndex: number
-  ): Promise<any> {
+  ): Promise<unknown> {
     try {
       // Use the extract method from BrowserClient
-      const extractAction = await client.extract(sessionId, 'current', selector);
-      
+      const extractAction = await client.extract(
+        sessionId,
+        'current',
+        selector
+      );
+
       const extractedData = extractAction.result?.data;
-      
+
       await this.recordAction(
         runId,
         nodeId,

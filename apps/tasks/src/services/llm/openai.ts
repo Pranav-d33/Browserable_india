@@ -1,7 +1,15 @@
 import OpenAI from 'openai';
 import { encoding_for_model } from 'tiktoken';
 import { logger, recordLLMTokens, trackLLMCost } from '@bharat-agents/shared';
-import { LLMProvider, LLMRequestOptions, LLMResponse, CircuitBreakerState, RetryConfig, TimeoutConfig, CircuitBreakerConfig } from './types';
+import {
+  LLMProvider,
+  LLMRequestOptions,
+  LLMResponse,
+  CircuitBreakerState,
+  RetryConfig,
+  TimeoutConfig,
+  CircuitBreakerConfig,
+} from './types';
 
 // =============================================================================
 // OpenAI LLM Implementation
@@ -51,7 +59,7 @@ export class OpenAILLM implements LLMProvider {
 
   async complete(opts: LLMRequestOptions): Promise<LLMResponse> {
     const startTime = Date.now();
-    
+
     try {
       // Check circuit breaker state
       if (!this.canAttemptRequest()) {
@@ -59,10 +67,10 @@ export class OpenAILLM implements LLMProvider {
       }
 
       const response = await this.executeWithRetries(opts);
-      
+
       // Record success
       this.recordSuccess();
-      
+
       // Calculate and record metrics
       const cost = trackLLMCost({
         provider: 'openai' as const,
@@ -72,40 +80,47 @@ export class OpenAILLM implements LLMProvider {
       });
 
       const duration = Date.now() - startTime;
-      logger.info({
-        provider: this.name,
-        model: opts.model,
-        inputTokens: response.inputTokens,
-        outputTokens: response.outputTokens,
-        cost: cost.toFixed(6),
-        duration,
-        temperature: opts.temperature,
-        maxTokens: opts.maxTokens,
-        json: opts.json,
-        tools: opts.tools?.length || 0,
-      }, 'OpenAI LLM request completed successfully');
+      logger.info(
+        {
+          provider: this.name,
+          model: opts.model,
+          inputTokens: response.inputTokens,
+          outputTokens: response.outputTokens,
+          cost: cost.toFixed(6),
+          duration,
+          temperature: opts.temperature,
+          maxTokens: opts.maxTokens,
+          json: opts.json,
+          tools: opts.tools?.length || 0,
+        },
+        'OpenAI LLM request completed successfully'
+      );
 
       return response;
-
     } catch (error) {
       // Record failure
       this.recordFailure();
-      
+
       const duration = Date.now() - startTime;
-      logger.error({
-        provider: this.name,
-        model: opts.model,
-        error: error instanceof Error ? error.message : String(error),
-        duration,
-        circuitBreakerState: this.circuitBreaker.state,
-        failures: this.circuitBreaker.failures,
-      }, 'OpenAI LLM request failed');
+      logger.error(
+        {
+          provider: this.name,
+          model: opts.model,
+          error: error instanceof Error ? error.message : String(error),
+          duration,
+          circuitBreakerState: this.circuitBreaker.state,
+          failures: this.circuitBreaker.failures,
+        },
+        'OpenAI LLM request failed'
+      );
 
       throw error;
     }
   }
 
-  private async executeWithRetries(opts: LLMRequestOptions): Promise<LLMResponse> {
+  private async executeWithRetries(
+    opts: LLMRequestOptions
+  ): Promise<LLMResponse> {
     let lastError: Error;
 
     for (let attempt = 0; attempt <= this.retryConfig.maxRetries; attempt++) {
@@ -113,7 +128,7 @@ export class OpenAILLM implements LLMProvider {
         return await this.executeRequest(opts);
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        
+
         // Don't retry on certain errors
         if (this.isNonRetryableError(lastError)) {
           throw lastError;
@@ -126,15 +141,18 @@ export class OpenAILLM implements LLMProvider {
 
         // Calculate delay with exponential backoff and jitter
         const delay = this.calculateDelay(attempt);
-        
-        logger.warn({
-          provider: this.name,
-          model: opts.model,
-          attempt: attempt + 1,
-          maxRetries: this.retryConfig.maxRetries,
-          delay,
-          error: lastError.message,
-        }, 'OpenAI LLM request failed, retrying');
+
+        logger.warn(
+          {
+            provider: this.name,
+            model: opts.model,
+            attempt: attempt + 1,
+            maxRetries: this.retryConfig.maxRetries,
+            delay,
+            error: lastError.message,
+          },
+          'OpenAI LLM request failed, retrying'
+        );
 
         await this.sleep(delay);
       }
@@ -145,11 +163,11 @@ export class OpenAILLM implements LLMProvider {
 
   private async executeRequest(opts: LLMRequestOptions): Promise<LLMResponse> {
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
-    
+
     if (opts.system) {
       messages.push({ role: 'system', content: opts.system });
     }
-    
+
     messages.push({ role: 'user', content: opts.prompt });
 
     const requestOptions: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
@@ -169,7 +187,8 @@ export class OpenAILLM implements LLMProvider {
       requestOptions.tools = opts.tools;
     }
 
-    const completion = await this.client.chat.completions.create(requestOptions);
+    const completion =
+      await this.client.chat.completions.create(requestOptions);
 
     const text = completion.choices[0]?.message?.content || '';
     const inputTokens = completion.usage?.prompt_tokens || 0;
@@ -195,7 +214,10 @@ export class OpenAILLM implements LLMProvider {
       return tokens.length;
     } catch (error) {
       // Fallback to approximate counting
-      logger.warn({ error: error instanceof Error ? error.message : String(error) }, 'Failed to count tokens with tiktoken, using approximation');
+      logger.warn(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Failed to count tokens with tiktoken, using approximation'
+      );
       return Math.ceil(text.length / 4);
     }
   }
@@ -206,7 +228,7 @@ export class OpenAILLM implements LLMProvider {
     switch (this.circuitBreaker.state) {
       case 'closed':
         return true;
-      
+
       case 'open':
         if (now >= this.circuitBreaker.nextAttemptTime) {
           this.circuitBreaker.state = 'half-open';
@@ -214,10 +236,13 @@ export class OpenAILLM implements LLMProvider {
           return true;
         }
         return false;
-      
+
       case 'half-open':
-        return this.circuitBreaker.failures < this.circuitBreakerConfig.halfOpenMaxAttempts;
-      
+        return (
+          this.circuitBreaker.failures <
+          this.circuitBreakerConfig.halfOpenMaxAttempts
+        );
+
       default:
         return true;
     }
@@ -236,22 +261,31 @@ export class OpenAILLM implements LLMProvider {
     this.circuitBreaker.failures++;
     this.circuitBreaker.lastFailureTime = now;
 
-    if (this.circuitBreaker.state === 'closed' && 
-        this.circuitBreaker.failures >= this.circuitBreakerConfig.failureThreshold) {
+    if (
+      this.circuitBreaker.state === 'closed' &&
+      this.circuitBreaker.failures >= this.circuitBreakerConfig.failureThreshold
+    ) {
       // Open the circuit breaker
       this.circuitBreaker.state = 'open';
-      this.circuitBreaker.nextAttemptTime = now + this.circuitBreakerConfig.recoveryTimeout;
-      
-      logger.warn({
-        provider: this.name,
-        failures: this.circuitBreaker.failures,
-        threshold: this.circuitBreakerConfig.failureThreshold,
-        nextAttemptTime: new Date(this.circuitBreaker.nextAttemptTime).toISOString(),
-      }, 'Circuit breaker opened');
+      this.circuitBreaker.nextAttemptTime =
+        now + this.circuitBreakerConfig.recoveryTimeout;
+
+      logger.warn(
+        {
+          provider: this.name,
+          failures: this.circuitBreaker.failures,
+          threshold: this.circuitBreakerConfig.failureThreshold,
+          nextAttemptTime: new Date(
+            this.circuitBreaker.nextAttemptTime
+          ).toISOString(),
+        },
+        'Circuit breaker opened'
+      );
     } else if (this.circuitBreaker.state === 'half-open') {
       // Failure in half-open state, open the circuit breaker again
       this.circuitBreaker.state = 'open';
-      this.circuitBreaker.nextAttemptTime = now + this.circuitBreakerConfig.recoveryTimeout;
+      this.circuitBreaker.nextAttemptTime =
+        now + this.circuitBreakerConfig.recoveryTimeout;
     }
   }
 
@@ -279,7 +313,7 @@ export class OpenAILLM implements LLMProvider {
       'billing_not_active',
     ];
 
-    return nonRetryableErrors.some(errType => 
+    return nonRetryableErrors.some(errType =>
       error.message.toLowerCase().includes(errType)
     );
   }

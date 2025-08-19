@@ -5,7 +5,7 @@ import { recordIdempotencyOperation } from './metrics.js';
 export interface IdempotencyResult {
   isDuplicate: boolean;
   existingRunId?: string;
-  existingRun?: any;
+  existingRun?: unknown;
 }
 
 /**
@@ -25,10 +25,13 @@ export class IdempotencyService {
       });
 
       if (existing) {
-        logger.info({
-          idempotencyKey,
-          runId: existing.runId,
-        }, 'Idempotency key found, returning existing run');
+        logger.info(
+          {
+            idempotencyKey,
+            runId: existing.runId,
+          },
+          'Idempotency key found, returning existing run'
+        );
 
         recordIdempotencyOperation('check', 'found');
 
@@ -60,14 +63,20 @@ export class IdempotencyService {
         },
       });
 
-      logger.info({
-        idempotencyKey,
-        runId,
-      }, 'Stored idempotency key');
-      
+      logger.info(
+        {
+          idempotencyKey,
+          runId,
+        },
+        'Stored idempotency key'
+      );
+
       recordIdempotencyOperation('store', 'success');
     } catch (error) {
-      logger.error({ error, idempotencyKey, runId }, 'Failed to store idempotency key');
+      logger.error(
+        { error, idempotencyKey, runId },
+        'Failed to store idempotency key'
+      );
       recordIdempotencyOperation('store', 'failed');
       // Don't throw - idempotency failure shouldn't break the main flow
     }
@@ -88,9 +97,12 @@ export class IdempotencyService {
         },
       });
 
-      logger.info({
-        deletedCount: result.count,
-      }, 'Cleaned up expired idempotency keys');
+      logger.info(
+        {
+          deletedCount: result.count,
+        },
+        'Cleaned up expired idempotency keys'
+      );
 
       recordIdempotencyOperation('cleanup', 'success');
       return result.count;

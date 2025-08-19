@@ -30,23 +30,23 @@ describe('BrowserService', () => {
   describe('Session Management', () => {
     it('should launch a new browser session', async () => {
       const result = await browserService.launchSession();
-      
+
       expect(result).toHaveProperty('sessionId');
       expect(typeof result.sessionId).toBe('string');
       expect(result.sessionId.length).toBeGreaterThan(0);
-      
+
       sessionId = result.sessionId;
     });
 
     it('should list active sessions', async () => {
       const result = await browserService.launchSession();
       sessionId = result.sessionId;
-      
+
       const sessions = await browserService.listSessions();
-      
+
       expect(Array.isArray(sessions)).toBe(true);
       expect(sessions.length).toBeGreaterThan(0);
-      
+
       const session = sessions.find(s => s.sessionId === sessionId);
       expect(session).toBeDefined();
       expect(session?.isActive).toBe(true);
@@ -55,28 +55,30 @@ describe('BrowserService', () => {
     it('should close a browser session', async () => {
       const result = await browserService.launchSession();
       sessionId = result.sessionId;
-      
+
       // Verify session exists
       const sessionsBefore = await browserService.listSessions();
       expect(sessionsBefore.find(s => s.sessionId === sessionId)).toBeDefined();
-      
+
       // Close session
       await browserService.closeSession(sessionId);
-      
+
       // Verify session is closed
       const sessionsAfter = await browserService.listSessions();
-      expect(sessionsAfter.find(s => s.sessionId === sessionId)).toBeUndefined();
-      
+      expect(
+        sessionsAfter.find(s => s.sessionId === sessionId)
+      ).toBeUndefined();
+
       // Clear sessionId to prevent cleanup in afterEach
       sessionId = '';
     });
 
     it('should throw error when closing non-existent session', async () => {
       const nonExistentSessionId = 'non-existent-session-id';
-      
-      await expect(browserService.closeSession(nonExistentSessionId)).rejects.toThrow(
-        'Session not found'
-      );
+
+      await expect(
+        browserService.closeSession(nonExistentSessionId)
+      ).rejects.toThrow('Session not found');
     });
   });
 
@@ -114,7 +116,7 @@ describe('BrowserService', () => {
   describe('Utility Methods', () => {
     it('should return supported browsers', () => {
       const browsers = browserService.getSupportedBrowsers();
-      
+
       expect(Array.isArray(browsers)).toBe(true);
       expect(browsers).toContain('chromium');
       expect(browsers).toContain('firefox');

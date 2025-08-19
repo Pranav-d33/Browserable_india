@@ -4,7 +4,7 @@ import { AddressInfo } from 'net';
 
 export interface TestServer {
   app: express.Application;
-  server: any;
+  server: import('http').Server;
   port: number;
   url: string;
   close: () => Promise<void>;
@@ -15,7 +15,7 @@ export interface TestServer {
  */
 export function createTestServer(): TestServer {
   const app = express();
-  
+
   // Serve static HTML pages for testing
   app.get('/test-form', (req, res) => {
     res.send(`
@@ -86,15 +86,16 @@ export function createTestServer(): TestServer {
   });
 
   const server = createServer(app);
-  
+
   return {
     app,
     server,
     port: 0, // Will be assigned by OS
     url: '',
-    close: () => new Promise<void>((resolve) => {
-      server.close(() => resolve());
-    }),
+    close: () =>
+      new Promise<void>(resolve => {
+        server.close(() => resolve());
+      }),
   };
 }
 
@@ -103,8 +104,8 @@ export function createTestServer(): TestServer {
  */
 export async function startTestServer(): Promise<TestServer> {
   const testServer = createTestServer();
-  
-  return new Promise((resolve) => {
+
+  return new Promise(resolve => {
     testServer.server.listen(0, () => {
       const address = testServer.server.address() as AddressInfo;
       testServer.port = address.port;

@@ -18,11 +18,11 @@ export const options = {
   ],
   thresholds: {
     // 95% of requests must complete within 5 seconds
-    'price_monitor_latency': ['p(95)<5000'],
+    price_monitor_latency: ['p(95)<5000'],
     // Error rate must be less than 5%
-    'errors': ['rate<0.05'],
+    errors: ['rate<0.05'],
     // HTTP request duration must be less than 3 seconds for 95% of requests
-    'http_req_duration': ['p(95)<3000'],
+    http_req_duration: ['p(95)<3000'],
   },
 };
 
@@ -46,8 +46,9 @@ const selectors = [
 // Helper function to get random test data
 function getRandomTestData() {
   const randomUrl = testUrls[Math.floor(Math.random() * testUrls.length)];
-  const randomSelector = selectors[Math.floor(Math.random() * selectors.length)];
-  
+  const randomSelector =
+    selectors[Math.floor(Math.random() * selectors.length)];
+
   return {
     productUrl: randomUrl,
     selector: randomSelector,
@@ -57,7 +58,7 @@ function getRandomTestData() {
 // Main test function
 export default function () {
   const testData = getRandomTestData();
-  
+
   // Prepare request payload
   const payload = JSON.stringify({
     productUrl: testData.productUrl,
@@ -67,7 +68,7 @@ export default function () {
   // Set request headers
   const headers = {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer test-token',
+    Authorization: 'Bearer test-token',
     'User-Agent': 'k6-load-test/1.0',
   };
 
@@ -87,12 +88,12 @@ export default function () {
 
   // Verify response
   const success = check(response, {
-    'status is 200': (r) => r.status === 200,
-    'response has runId': (r) => r.json('runId') !== undefined,
-    'response has status': (r) => r.json('status') !== undefined,
-    'response has agent': (r) => r.json('agent') === 'BROWSER',
-    'response has output': (r) => r.json('output') !== undefined,
-    'response time < 5s': (r) => r.timings.duration < 5000,
+    'status is 200': r => r.status === 200,
+    'response has runId': r => r.json('runId') !== undefined,
+    'response has status': r => r.json('status') !== undefined,
+    'response has agent': r => r.json('agent') === 'BROWSER',
+    'response has output': r => r.json('output') !== undefined,
+    'response time < 5s': r => r.timings.duration < 5000,
   });
 
   // Log errors
@@ -120,8 +121,12 @@ export function teardown(data) {
   console.log('Load test completed');
   console.log('Summary:');
   console.log(`- Total requests: ${data.metrics.http_reqs?.count || 0}`);
-  console.log(`- Average response time: ${data.metrics.http_req_duration?.avg || 0}ms`);
-  console.log(`- P95 response time: ${data.metrics.http_req_duration?.['p(95)'] || 0}ms`);
+  console.log(
+    `- Average response time: ${data.metrics.http_req_duration?.avg || 0}ms`
+  );
+  console.log(
+    `- P95 response time: ${data.metrics.http_req_duration?.['p(95)'] || 0}ms`
+  );
   console.log(`- Error rate: ${(data.metrics.errors?.rate || 0) * 100}%`);
 }
 
@@ -135,9 +140,9 @@ export function handleSummary(data) {
 
 // Text summary function
 function textSummary(data, options) {
-  const { metrics, root_group } = data;
+  const { metrics } = data;
   const { http_reqs, http_req_duration, errors } = metrics;
-  
+
   return `
 Load Test Results - Price Monitor Flow
 =====================================

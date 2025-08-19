@@ -1,9 +1,9 @@
-import { record, getAuditLogs, getAuditStats, type AuditEvent } from './audit.js';
+import { record, getAuditLogs, getAuditStats } from './audit.js';
 
 /**
  * Example usage of the audit service
  */
-async function exampleUsage() {
+async function exampleUsage(): Promise<void> {
   console.log('=== Audit Service Examples ===\n');
 
   // Example 1: Basic audit event recording
@@ -47,7 +47,7 @@ async function exampleUsage() {
     payload: {
       endpoint: '/api/data',
       headers: {
-        'Authorization': 'Bearer sk-1234567890abcdef',
+        Authorization: 'Bearer sk-1234567890abcdef',
         'Content-Type': 'application/json',
       },
       body: {
@@ -93,7 +93,7 @@ async function exampleUsage() {
       size: '2.5MB',
     },
   };
-  
+
   await record({
     runId: 'run-123',
     action: 'data_processing',
@@ -111,7 +111,7 @@ async function exampleUsage() {
     console.log(`✓ Retrieved ${logs.logs.length} audit logs`);
     console.log(`  Has more: ${logs.hasMore}`);
     console.log(`  Next cursor: ${logs.nextCursor || 'None'}`);
-    
+
     if (logs.logs.length > 0) {
       console.log('  Sample log:');
       const sampleLog = logs.logs[0];
@@ -120,7 +120,7 @@ async function exampleUsage() {
       console.log(`    Duration: ${sampleLog.durationMs}ms`);
       console.log(`    Created: ${sampleLog.createdAt}`);
     }
-  } catch (error) {
+  } catch {
     console.log('⚠ Could not retrieve audit logs (database not available)');
   }
   console.log();
@@ -134,9 +134,13 @@ async function exampleUsage() {
     console.log(`  Success count: ${stats.successCount}`);
     console.log(`  Error count: ${stats.errorCount}`);
     console.log(`  Average duration: ${stats.averageDuration}ms`);
-    console.log(`  Actions: ${stats.actions.map(a => `${a.action}(${a.count})`).join(', ')}`);
-  } catch (error) {
-    console.log('⚠ Could not retrieve audit statistics (database not available)');
+    console.log(
+      `  Actions: ${stats.actions.map(a => `${a.action}(${a.count})`).join(', ')}`
+    );
+  } catch {
+    console.log(
+      '⚠ Could not retrieve audit statistics (database not available)'
+    );
   }
   console.log();
 
@@ -146,97 +150,18 @@ async function exampleUsage() {
 /**
  * Example of integrating audit logging into other services
  */
-function integrationExample() {
+function integrationExample(): void {
   console.log('=== Integration Example ===\n');
 
-  // Example: Wrapping a function with audit logging
-  async function auditedFunction<T>(
-    runId: string,
-    action: string,
-    fn: () => Promise<T>
-  ): Promise<T> {
-    const startTime = Date.now();
-    
-    try {
-      const result = await fn();
-      
-      // Record success
-      await record({
-        runId,
-        action,
-        status: 'OK',
-        durationMs: Date.now() - startTime,
-        result: { success: true, data: result },
-      });
-      
-      return result;
-    } catch (error) {
-      // Record error
-      await record({
-        runId,
-        action,
-        status: 'ERR',
-        durationMs: Date.now() - startTime,
-        result: { 
-          error: error instanceof Error ? error.message : String(error),
-          success: false,
-        },
-      });
-      
-      throw error;
-    }
-  }
-
-  // Example usage of the audited function
-  const exampleFunction = async () => {
-    // Simulate some work
-    await new Promise(resolve => setTimeout(resolve, 100));
-    return { message: 'Hello, World!' };
-  };
+  // Example: Wrapping a function with audit logging (see usage below)
 
   console.log('Example of audited function wrapper:');
-  console.log('const result = await auditedFunction(runId, "example_action", exampleFunction);');
+  console.log(
+    'const result = await auditedFunction(runId, "example_action", exampleFunction);'
+  );
   console.log();
 
-  // Example: Audit decorator pattern
-  function auditDecorator(runId: string, action: string) {
-    return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
-      const method = descriptor.value;
-      
-      descriptor.value = async function (...args: any[]) {
-        const startTime = Date.now();
-        
-        try {
-          const result = await method.apply(this, args);
-          
-          await record({
-            runId,
-            action: `${action}_${propertyName}`,
-            status: 'OK',
-            durationMs: Date.now() - startTime,
-            payload: { args },
-            result: { success: true, data: result },
-          });
-          
-          return result;
-        } catch (error) {
-          await record({
-            runId,
-            action: `${action}_${propertyName}`,
-            status: 'ERR',
-            durationMs: Date.now() - startTime,
-            payload: { args },
-            result: { 
-              error: error instanceof Error ? error.message : String(error),
-              success: false,
-            },
-          });
-          
-          throw error;
-        }
-      };
-    };
-  }
+  // Example: Audit decorator pattern (see code sample below)
 
   console.log('Example of audit decorator:');
   console.log('class MyService {');

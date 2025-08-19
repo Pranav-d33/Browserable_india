@@ -13,7 +13,7 @@ export const inputSchema = z
   .min(1, 'Input is required')
   .max(10000, 'Input too long (max 10KB)')
   .refine(
-    (input) => {
+    input => {
       // Basic XSS prevention - reject potentially dangerous content
       const dangerousPatterns = [
         /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
@@ -62,7 +62,7 @@ export const inputSchema = z
         /<noscript\b/gi,
         /<wbr\b/gi,
       ];
-      
+
       return !dangerousPatterns.some(pattern => pattern.test(input));
     },
     {
@@ -131,19 +131,15 @@ export const listRunsSchema = z
     limit: z
       .string()
       .regex(/^\d+$/, 'Limit must be a number')
-      .transform((val) => parseInt(val, 10))
-      .refine((val) => val > 0 && val <= 100, 'Limit must be between 1 and 100')
+      .transform(val => parseInt(val, 10))
+      .refine(val => val > 0 && val <= 100, 'Limit must be between 1 and 100')
       .optional()
       .default('20'),
-    cursor: z
-      .string()
-      .optional(),
+    cursor: z.string().optional(),
     status: z
       .enum(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED', 'CANCELLED'])
       .optional(),
-    agent: z
-      .string()
-      .optional(),
+    agent: z.string().optional(),
   })
   .strict();
 
@@ -173,69 +169,91 @@ export const runDetailsResponseSchema = z.object({
       data: z.record(z.unknown()).optional(),
       context: z.record(z.unknown()).optional(),
     }),
-    output: z.object({
-      result: z.unknown(),
-      metadata: z.record(z.unknown()).optional(),
-      usage: z.object({
-        tokens: z.number().optional(),
-        cost: z.number().optional(),
-        duration: z.number().optional(),
-      }).optional(),
-    }).optional(),
-    error: z.object({
-      code: z.string(),
-      message: z.string(),
-      details: z.record(z.unknown()).optional(),
-    }).optional(),
+    output: z
+      .object({
+        result: z.unknown(),
+        metadata: z.record(z.unknown()).optional(),
+        usage: z
+          .object({
+            tokens: z.number().optional(),
+            cost: z.number().optional(),
+            duration: z.number().optional(),
+          })
+          .optional(),
+      })
+      .optional(),
+    error: z
+      .object({
+        code: z.string(),
+        message: z.string(),
+        details: z.record(z.unknown()).optional(),
+      })
+      .optional(),
     metadata: z.record(z.unknown()),
     startedAt: z.string().datetime(),
     completedAt: z.string().datetime().optional(),
     duration: z.number().optional(),
   }),
-  nodes: z.array(z.object({
-    id: z.string(),
-    name: z.string(),
-    type: z.string(),
-    status: z.enum(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED', 'CANCELLED', 'SKIPPED', 'WAITING']),
-    input: z.record(z.unknown()),
-    output: z.record(z.unknown()).optional(),
-    error: z.object({
-      code: z.string(),
-      message: z.string(),
-      details: z.record(z.unknown()).optional(),
-    }).optional(),
-    startedAt: z.string().datetime(),
-    completedAt: z.string().datetime().optional(),
-    duration: z.number().optional(),
-    attempts: z.number(),
-    maxAttempts: z.number(),
-  })),
+  nodes: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      type: z.string(),
+      status: z.enum([
+        'PENDING',
+        'RUNNING',
+        'COMPLETED',
+        'FAILED',
+        'CANCELLED',
+        'SKIPPED',
+        'WAITING',
+      ]),
+      input: z.record(z.unknown()),
+      output: z.record(z.unknown()).optional(),
+      error: z
+        .object({
+          code: z.string(),
+          message: z.string(),
+          details: z.record(z.unknown()).optional(),
+        })
+        .optional(),
+      startedAt: z.string().datetime(),
+      completedAt: z.string().datetime().optional(),
+      duration: z.number().optional(),
+      attempts: z.number(),
+      maxAttempts: z.number(),
+    })
+  ),
   artifacts: z.array(artifactSchema).optional(),
 });
 
 // Audit logs response schema
 export const auditLogsResponseSchema = z.object({
-  logs: z.array(z.object({
-    id: z.string(),
-    runId: z.string(),
-    nodeId: z.string().optional(),
-    userId: z.string().optional(),
-    action: z.string(),
-    status: z.string(),
-    durationMs: z.number(),
-    payload: z.unknown().optional(),
-    result: z.unknown().optional(),
-    createdAt: z.string().datetime(),
-  })),
+  logs: z.array(
+    z.object({
+      id: z.string(),
+      runId: z.string(),
+      nodeId: z.string().optional(),
+      userId: z.string().optional(),
+      action: z.string(),
+      status: z.string(),
+      durationMs: z.number(),
+      payload: z.unknown().optional(),
+      result: z.unknown().optional(),
+      createdAt: z.string().datetime(),
+    })
+  ),
   stats: z.object({
     totalEvents: z.number(),
     successCount: z.number(),
     errorCount: z.number(),
     averageDuration: z.number(),
-    actions: z.array(z.object({
-      action: z.string(),
-      count: z.number(),
-    })),
+    actions: z.array(
+      z.object({
+        action: z.string(),
+        count: z.number(),
+      })
+    ),
   }),
   pagination: z.object({
     nextCursor: z.string().optional(),
@@ -283,11 +301,13 @@ export const validationErrorSchema = z.object({
   path: z.string(),
   method: z.string(),
   statusCode: z.number(),
-  details: z.object({
-    field: z.string().optional(),
-    message: z.string().optional(),
-    value: z.unknown().optional(),
-  }).optional(),
+  details: z
+    .object({
+      field: z.string().optional(),
+      message: z.string().optional(),
+      value: z.unknown().optional(),
+    })
+    .optional(),
 });
 
 // =============================================================================
@@ -308,18 +328,20 @@ export const sanitizeOutput = (data: unknown): unknown => {
       .replace(/'/g, '&#x27;')
       .replace(/\//g, '&#x2F;');
   }
-  
+
   if (Array.isArray(data)) {
     return data.map(sanitizeOutput);
   }
-  
+
   if (data && typeof data === 'object') {
     const sanitized: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
       // Skip sensitive fields
-      if (['password', 'token', 'secret', 'key', 'authorization'].some(sensitive => 
-        key.toLowerCase().includes(sensitive)
-      )) {
+      if (
+        ['password', 'token', 'secret', 'key', 'authorization'].some(
+          sensitive => key.toLowerCase().includes(sensitive)
+        )
+      ) {
         sanitized[key] = '[REDACTED]';
       } else {
         sanitized[key] = sanitizeOutput(value);
@@ -327,7 +349,7 @@ export const sanitizeOutput = (data: unknown): unknown => {
     }
     return sanitized;
   }
-  
+
   return data;
 };
 
@@ -340,7 +362,7 @@ export const validateAndSanitizeRequest = <T extends z.ZodType>(
 ): z.infer<T> => {
   // Validate with strict schema
   const validated = schema.parse(data);
-  
+
   // Additional sanitization for validated data
   return sanitizeOutput(validated) as z.infer<T>;
 };
@@ -354,7 +376,7 @@ export const createSanitizedResponse = <T extends z.ZodType>(
 ): z.infer<T> => {
   // Validate response data
   const validated = schema.parse(data);
-  
+
   // Sanitize for output
   return sanitizeOutput(validated) as z.infer<T>;
 };

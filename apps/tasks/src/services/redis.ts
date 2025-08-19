@@ -5,7 +5,7 @@ import { env, logger } from '@bharat-agents/shared';
 const redisClient = createClient({
   url: env.REDIS_URL || 'redis://localhost:6379',
   socket: {
-    reconnectStrategy: (retries) => {
+    reconnectStrategy: retries => {
       if (retries > 10) {
         logger.error('Redis connection failed after 10 retries');
         return new Error('Redis connection failed');
@@ -20,7 +20,7 @@ redisClient.on('connect', () => {
   logger.info('Redis client connected');
 });
 
-redisClient.on('error', (error) => {
+redisClient.on('error', error => {
   logger.error({ error }, 'Redis client error');
 });
 
@@ -33,7 +33,7 @@ redisClient.on('end', () => {
 });
 
 // Connect to Redis
-redisClient.connect().catch((error) => {
+redisClient.connect().catch(error => {
   logger.error({ error }, 'Failed to connect to Redis');
 });
 

@@ -11,7 +11,7 @@ export interface LLMProvider {
     temperature?: number;
     maxTokens?: number;
     json?: boolean;
-    tools?: any[];
+    tools?: Array<{ name: string; description?: string; parameters?: unknown }>;
   }): Promise<{
     text: string;
     inputTokens: number;
@@ -26,7 +26,7 @@ export interface LLMRequestOptions {
   temperature?: number;
   maxTokens?: number;
   json?: boolean;
-  tools?: any[];
+  tools?: Array<{ name: string; description?: string; parameters?: unknown }>;
 }
 
 export interface LLMResponse {

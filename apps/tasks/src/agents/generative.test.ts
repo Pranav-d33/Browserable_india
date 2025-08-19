@@ -19,17 +19,17 @@ describe('GenerativeAgent', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock LLM
     mockLLM = {
       name: 'openai',
       complete: vi.fn(),
       getDefaultModel: vi.fn().mockReturnValue('gpt-3.5-turbo'),
     };
-    
+
     const { getLLM } = require('../services/llm/index.js');
     getLLM.mockReturnValue(mockLLM);
-    
+
     agent = new GenerativeAgent();
   });
 
@@ -189,7 +189,9 @@ describe('GenerativeAgent', () => {
       const result = await agent.runNode(runArgs);
 
       expect(result.meta?.success).toBe(false);
-      expect(JSON.parse(result.output).error).toContain('Invalid schema definition');
+      expect(JSON.parse(result.output).error).toContain(
+        'Invalid schema definition'
+      );
     });
 
     it('should handle LLM service errors gracefully', async () => {
@@ -208,7 +210,9 @@ describe('GenerativeAgent', () => {
       const result = await agent.runNode(runArgs);
 
       expect(result.meta?.success).toBe(false);
-      expect(JSON.parse(result.output).error).toContain('LLM service unavailable');
+      expect(JSON.parse(result.output).error).toContain(
+        'LLM service unavailable'
+      );
     });
 
     it('should track costs correctly', async () => {
@@ -287,7 +291,9 @@ describe('GenerativeAgent', () => {
       const result = await agent.runNode(runArgs);
 
       expect(result.meta?.success).toBe(true);
-      expect(JSON.parse(result.output).text).toContain('{"name": "John Doe", "age": 30}');
+      expect(JSON.parse(result.output).text).toContain(
+        '{"name": "John Doe", "age": 30}'
+      );
     });
 
     it('should record audit logs for all actions', async () => {

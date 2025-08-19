@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { 
-  createTaskSchema, 
-  inputSchema, 
-  agentSchema, 
+import {
+  createTaskSchema,
+  inputSchema,
+  agentSchema,
   metaSchema,
   sanitizeOutput,
-  validateAndSanitizeRequest 
+  validateAndSanitizeRequest,
 } from '../../schemas/validation.js';
 
 describe('Security Validation', () => {
@@ -81,7 +81,7 @@ describe('Security Validation', () => {
         '<button onclick="alert(\'xss\')"></button>',
         '<link rel="stylesheet" href="javascript:alert(\'xss\')">',
         '<meta http-equiv="refresh" content="0;url=javascript:alert(\'xss\')">',
-        '<style>body{background:url(javascript:alert(\'xss\'))}</style>',
+        "<style>body{background:url(javascript:alert('xss'))}</style>",
         '<base href="javascript:alert(\'xss\')">',
         '<title><script>alert("xss")</script></title>',
         '<head><script>alert("xss")</script></head>',
@@ -104,7 +104,9 @@ describe('Security Validation', () => {
       ];
 
       xssAttempts.forEach(attempt => {
-        expect(() => inputSchema.parse(attempt)).toThrow('Input contains potentially dangerous content');
+        expect(() => inputSchema.parse(attempt)).toThrow(
+          'Input contains potentially dangerous content'
+        );
       });
     });
 
@@ -125,7 +127,7 @@ describe('Security Validation', () => {
   describe('agentSchema', () => {
     it('should accept valid agents', () => {
       const validAgents = ['echo', 'browser', 'llm'];
-      
+
       validAgents.forEach(agent => {
         const result = agentSchema.parse(agent);
         expect(result).toBe(agent);
@@ -134,7 +136,7 @@ describe('Security Validation', () => {
 
     it('should reject invalid agents', () => {
       const invalidAgents = ['invalid', 'hacker', 'malicious'];
-      
+
       invalidAgents.forEach(agent => {
         expect(() => agentSchema.parse(agent)).toThrow();
       });
@@ -186,7 +188,7 @@ describe('Security Validation', () => {
     it('should sanitize HTML entities in strings', () => {
       const input = '<script>alert("xss")</script>';
       const expected = '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;';
-      
+
       const result = sanitizeOutput(input);
       expect(result).toBe(expected);
     });
@@ -202,7 +204,7 @@ describe('Security Validation', () => {
       };
 
       const result = sanitizeOutput(input) as Record<string, unknown>;
-      
+
       expect(result.username).toBe('john');
       expect(result.password).toBe('[REDACTED]');
       expect(result.token).toBe('[REDACTED]');
@@ -214,7 +216,7 @@ describe('Security Validation', () => {
     it('should handle arrays', () => {
       const input = ['<script>', 'normal', 'javascript:alert()'];
       const expected = ['&lt;script&gt;', 'normal', 'javascript:alert()'];
-      
+
       const result = sanitizeOutput(input);
       expect(result).toEqual(expected);
     });
@@ -232,7 +234,7 @@ describe('Security Validation', () => {
       };
 
       const result = sanitizeOutput(input) as Record<string, unknown>;
-      
+
       expect(result.user).toEqual({
         name: 'John',
         password: '[REDACTED]',
@@ -265,9 +267,11 @@ describe('Security Validation', () => {
       };
 
       const result = validateAndSanitizeRequest(createTaskSchema, input);
-      
+
       expect(result.agent).toBe('echo');
-      expect(result.input).toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
+      expect(result.input).toBe(
+        '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
+      );
       expect(result.meta).toEqual({ source: 'test' });
     });
 
@@ -277,7 +281,9 @@ describe('Security Validation', () => {
         input: 'test',
       };
 
-      expect(() => validateAndSanitizeRequest(createTaskSchema, invalidInput)).toThrow();
+      expect(() =>
+        validateAndSanitizeRequest(createTaskSchema, invalidInput)
+      ).toThrow();
     });
   });
 });

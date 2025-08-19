@@ -7,7 +7,7 @@ export interface RunArgs {
   runId: string;
   nodeId: string;
   input: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 }
 
 export interface NodeResult {
@@ -15,9 +15,9 @@ export interface NodeResult {
   artifacts?: Array<{
     type: string;
     url: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }>;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 }
 
 export interface ArtifactStoreOptions {
@@ -25,7 +25,7 @@ export interface ArtifactStoreOptions {
   buffer: Buffer;
   mime: string;
   ext: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -49,7 +49,7 @@ export abstract class BaseAgent {
     nodeId?: string
   ): Promise<T> {
     const startTime = Date.now();
-    
+
     try {
       const llm = getLLM();
       const response = await llm.complete({
@@ -64,20 +64,23 @@ export abstract class BaseAgent {
       });
 
       // Parse the response text as JSON
-      let parsed: any;
+      let parsed: unknown;
       try {
         parsed = JSON.parse(response.text);
       } catch (parseError) {
         logger.warn(
-          { 
-            runId, 
-            nodeId, 
+          {
+            runId,
+            nodeId,
             response: response.text,
-            error: parseError instanceof Error ? parseError.message : String(parseError)
+            error:
+              parseError instanceof Error
+                ? parseError.message
+                : String(parseError),
           },
           'Failed to parse LLM response as JSON, attempting to extract JSON'
         );
-        
+
         // Try to extract JSON from the response if it's wrapped in markdown or other text
         const jsonMatch = response.text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
@@ -104,7 +107,7 @@ export abstract class BaseAgent {
       return validated;
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       // Record audit log for failure
       await record({
         runId,
@@ -113,23 +116,23 @@ export abstract class BaseAgent {
         status: 'ERR',
         durationMs: duration,
         payload: { prompt, schema: schema.description || 'unknown' },
-        result: { 
+        result: {
           error: error instanceof Error ? error.message : String(error),
-          success: false 
+          success: false,
         },
       });
 
       logger.error(
-        { 
-          runId, 
-          nodeId, 
+        {
+          runId,
+          nodeId,
           error: error instanceof Error ? error.message : String(error),
           prompt,
-          duration 
+          duration,
         },
         'Failed to parse LLM response as JSON'
       );
-      
+
       throw error;
     }
   }
@@ -137,7 +140,9 @@ export abstract class BaseAgent {
   /**
    * Store an artifact (file) to S3/MinIO and return the URL
    */
-  protected async storeArtifact(options: ArtifactStoreOptions): Promise<string> {
+  protected async storeArtifact(
+    options: ArtifactStoreOptions
+  ): Promise<string> {
     const { runId, buffer, mime, ext, metadata = {} } = options;
     const startTime = Date.now();
 
@@ -151,16 +156,20 @@ export abstract class BaseAgent {
       // In production, this would upload to S3/MinIO
       const fs = await import('fs/promises');
       const path = await import('path');
-      
+
       // Create artifacts directory if it doesn't exist
       const artifactsDir = path.join(process.cwd(), 'artifacts', runId);
       await fs.mkdir(artifactsDir, { recursive: true });
-      
-      const filePath = path.join(artifactsDir, `${timestamp}-${randomId}.${ext}`);
+
+      const filePath = path.join(
+        artifactsDir,
+        `${timestamp}-${randomId}.${ext}`
+      );
       await fs.writeFile(filePath, buffer);
 
       // Generate a URL (in production, this would be the S3/MinIO URL)
-      const baseUrl = process.env.ARTIFACT_BASE_URL || 'http://localhost:3000/artifacts';
+      const baseUrl =
+        process.env.ARTIFACT_BASE_URL || 'http://localhost:3000/artifacts';
       const artifactUrl = `${baseUrl}/${filename}`;
 
       // Store artifact metadata in database
@@ -186,22 +195,22 @@ export abstract class BaseAgent {
         action: 'artifact_stored',
         status: 'OK',
         durationMs: Date.now() - startTime,
-        payload: { 
-          filename, 
-          mime, 
-          size: buffer.length, 
+        payload: {
+          filename,
+          mime,
+          size: buffer.length,
           ext,
-          metadata 
+          metadata,
         },
         result: { url: artifactUrl, success: true },
       });
 
       logger.info(
-        { 
-          runId, 
-          filename, 
-          size: buffer.length, 
-          url: artifactUrl 
+        {
+          runId,
+          filename,
+          size: buffer.length,
+          url: artifactUrl,
         },
         'Artifact stored successfully'
       );
@@ -209,37 +218,37 @@ export abstract class BaseAgent {
       return artifactUrl;
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       // Record audit log for failure
       await record({
         runId,
         action: 'artifact_stored',
         status: 'ERR',
         durationMs: duration,
-        payload: { 
+        payload: {
           filename: `${runId}/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${ext}`,
-          mime, 
-          size: buffer.length, 
+          mime,
+          size: buffer.length,
           ext,
-          metadata 
+          metadata,
         },
-        result: { 
+        result: {
           error: error instanceof Error ? error.message : String(error),
-          success: false 
+          success: false,
         },
       });
 
       logger.error(
-        { 
-          runId, 
+        {
+          runId,
           error: error instanceof Error ? error.message : String(error),
           mime,
           size: buffer.length,
-          duration 
+          duration,
         },
         'Failed to store artifact'
       );
-      
+
       throw error;
     }
   }
@@ -251,8 +260,8 @@ export abstract class BaseAgent {
     runId: string,
     nodeId: string,
     action: string,
-    payload?: any,
-    result?: any,
+    payload?: unknown,
+    result?: unknown,
     status: 'OK' | 'ERR' = 'OK',
     durationMs?: number
   ): Promise<void> {

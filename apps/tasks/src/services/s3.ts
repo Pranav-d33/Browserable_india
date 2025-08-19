@@ -1,4 +1,8 @@
-import { S3Client, CreateBucketCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  CreateBucketCommand,
+  HeadBucketCommand,
+} from '@aws-sdk/client-s3';
 import { env, logger } from '@bharat-agents/shared';
 
 // Create S3 client for MinIO
@@ -20,19 +24,29 @@ export const ensureBucket = async (bucketName: string): Promise<void> => {
     // Check if bucket exists
     await s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
     logger.debug({ bucketName }, 'Bucket already exists');
-  } catch (error: any) {
-    if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+  } catch (error: unknown) {
+    const err = error as {
+      name?: string;
+      $metadata?: { httpStatusCode?: number };
+    };
+    if (err?.name === 'NotFound' || err?.$metadata?.httpStatusCode === 404) {
       // Bucket doesn't exist, create it
       try {
         await s3Client.send(new CreateBucketCommand({ Bucket: bucketName }));
         logger.info({ bucketName }, 'Created bucket');
-      } catch (createError) {
-        logger.error({ bucketName, error: createError }, 'Failed to create bucket');
+      } catch (createError: unknown) {
+        logger.error(
+          { bucketName, error: createError },
+          'Failed to create bucket'
+        );
         throw createError;
       }
     } else {
-      logger.error({ bucketName, error }, 'Failed to check bucket existence');
-      throw error;
+      logger.error(
+        { bucketName, error: err },
+        'Failed to check bucket existence'
+      );
+      throw err;
     }
   }
 };
@@ -42,11 +56,11 @@ export const ensureBucket = async (bucketName: string): Promise<void> => {
  */
 export const initializeBuckets = async (): Promise<void> => {
   const defaultBuckets = ['artifacts', 'uploads', 'temp'];
-  
+
   for (const bucket of defaultBuckets) {
     await ensureBucket(bucket);
   }
-  
+
   logger.info({ buckets: defaultBuckets }, 'Initialized default buckets');
 };
 

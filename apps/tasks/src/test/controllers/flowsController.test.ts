@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
-import { executePriceMonitor, executeFormAutofill } from '../../controllers/flowsController.js';
+import {
+  executePriceMonitor,
+  executeFormAutofill,
+} from '../../controllers/flowsController.js';
 import { authenticateToken, requireRole } from '../../security/auth.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
-import { 
-  priceMonitorInputSchema, 
-  formAutofillInputSchema 
+import {
+  priceMonitorInputSchema,
+  formAutofillInputSchema,
 } from '../../flows/index.js';
 
 // Mock dependencies
@@ -45,8 +48,20 @@ app.use((req, res, next) => {
 });
 
 // Test routes
-app.post('/flows/price-monitor', authenticateToken, requireRole(['user', 'admin']), validateRequest({ body: priceMonitorInputSchema }), executePriceMonitor);
-app.post('/flows/form-autofill', authenticateToken, requireRole(['user', 'admin']), validateRequest({ body: formAutofillInputSchema }), executeFormAutofill);
+app.post(
+  '/flows/price-monitor',
+  authenticateToken,
+  requireRole(['user', 'admin']),
+  validateRequest({ body: priceMonitorInputSchema }),
+  executePriceMonitor
+);
+app.post(
+  '/flows/form-autofill',
+  authenticateToken,
+  requireRole(['user', 'admin']),
+  validateRequest({ body: formAutofillInputSchema }),
+  executeFormAutofill
+);
 
 describe('Flows Controller', () => {
   beforeEach(() => {
@@ -62,13 +77,13 @@ describe('Flows Controller', () => {
       const mockResult = {
         runId: 'run-123',
         status: 'completed',
-        output: { 
+        output: {
           result: {
             price: 29.99,
             currency: 'USD',
             url: 'https://example.com/product/123',
             ts: new Date().toISOString(),
-          }
+          },
         },
       };
 
@@ -105,7 +120,8 @@ describe('Flows Controller', () => {
       expect(jarvis.handleCreateRun).toHaveBeenCalledWith({
         userId: 'test-user-123',
         input: {
-          prompt: 'Monitor price for product at https://example.com/product/123 using selector .price-selector',
+          prompt:
+            'Monitor price for product at https://example.com/product/123 using selector .price-selector',
           data: {
             productUrl: 'https://example.com/product/123',
             selector: '.price-selector',
@@ -156,9 +172,13 @@ describe('Flows Controller', () => {
         },
       };
 
-      const { idempotencyService } = await import('../../services/idempotency.js');
+      const { idempotencyService } = await import(
+        '../../services/idempotency.js'
+      );
       vi.mocked(idempotencyService.validateKey).mockReturnValue(true);
-      vi.mocked(idempotencyService.checkIdempotency).mockResolvedValue(mockIdempotencyResult);
+      vi.mocked(idempotencyService.checkIdempotency).mockResolvedValue(
+        mockIdempotencyResult
+      );
 
       const response = await request(app)
         .post('/flows/price-monitor')
@@ -187,12 +207,18 @@ describe('Flows Controller', () => {
         artifacts: [],
       });
 
-      expect(idempotencyService.validateKey).toHaveBeenCalledWith('test-key-123');
-      expect(idempotencyService.checkIdempotency).toHaveBeenCalledWith('test-key-123');
+      expect(idempotencyService.validateKey).toHaveBeenCalledWith(
+        'test-key-123'
+      );
+      expect(idempotencyService.checkIdempotency).toHaveBeenCalledWith(
+        'test-key-123'
+      );
     });
 
     it('should reject invalid idempotency key', async () => {
-      const { idempotencyService } = await import('../../services/idempotency.js');
+      const { idempotencyService } = await import(
+        '../../services/idempotency.js'
+      );
       vi.mocked(idempotencyService.validateKey).mockReturnValue(false);
 
       const response = await request(app)
@@ -207,7 +233,8 @@ describe('Flows Controller', () => {
       expect(response.status).toBe(400);
       expect(response.body).toMatchObject({
         error: 'Invalid Idempotency-Key',
-        message: 'Idempotency key must be alphanumeric with hyphens/underscores only',
+        message:
+          'Idempotency key must be alphanumeric with hyphens/underscores only',
       });
     });
 
@@ -247,13 +274,13 @@ describe('Flows Controller', () => {
       const mockResult = {
         runId: 'run-456',
         status: 'completed',
-        output: { 
+        output: {
           result: {
             finalUrl: 'https://example.com/form/submitted',
             success: true,
             fieldsFilled: 2,
             submitted: true,
-          }
+          },
         },
       };
 
@@ -298,7 +325,8 @@ describe('Flows Controller', () => {
       expect(jarvis.handleCreateRun).toHaveBeenCalledWith({
         userId: 'test-user-123',
         input: {
-          prompt: 'Fill form at https://example.com/form with 2 fields and submit',
+          prompt:
+            'Fill form at https://example.com/form with 2 fields and submit',
           data: {
             url: 'https://example.com/form',
             fields: [
@@ -336,13 +364,13 @@ describe('Flows Controller', () => {
       const mockResult = {
         runId: 'run-789',
         status: 'completed',
-        output: { 
+        output: {
           result: {
             finalUrl: 'https://example.com/form',
             success: true,
             fieldsFilled: 1,
             submitted: false,
-          }
+          },
         },
       };
 
@@ -354,9 +382,7 @@ describe('Flows Controller', () => {
         .set('Authorization', 'Bearer test-token')
         .send({
           url: 'https://example.com/form',
-          fields: [
-            { selector: '#name', value: 'John Doe' },
-          ],
+          fields: [{ selector: '#name', value: 'John Doe' }],
         });
 
       expect(response.status).toBe(201);
@@ -366,9 +392,7 @@ describe('Flows Controller', () => {
         agent: 'BROWSER',
         input: {
           url: 'https://example.com/form',
-          fields: [
-            { selector: '#name', value: 'John Doe' },
-          ],
+          fields: [{ selector: '#name', value: 'John Doe' }],
         },
         output: {
           finalUrl: 'https://example.com/form',
@@ -384,9 +408,7 @@ describe('Flows Controller', () => {
           prompt: 'Fill form at https://example.com/form with 1 fields',
           data: {
             url: 'https://example.com/form',
-            fields: [
-              { selector: '#name', value: 'John Doe' },
-            ],
+            fields: [{ selector: '#name', value: 'John Doe' }],
           },
           context: {
             flowType: 'form_autofill',
@@ -436,9 +458,13 @@ describe('Flows Controller', () => {
         },
       };
 
-      const { idempotencyService } = await import('../../services/idempotency.js');
+      const { idempotencyService } = await import(
+        '../../services/idempotency.js'
+      );
       vi.mocked(idempotencyService.validateKey).mockReturnValue(true);
-      vi.mocked(idempotencyService.checkIdempotency).mockResolvedValue(mockIdempotencyResult);
+      vi.mocked(idempotencyService.checkIdempotency).mockResolvedValue(
+        mockIdempotencyResult
+      );
 
       const response = await request(app)
         .post('/flows/form-autofill')
@@ -547,7 +573,12 @@ describe('Flows Controller', () => {
         };
         next();
       });
-      restrictedApp.post('/flows/price-monitor', authenticateToken, requireRole(['user', 'admin']), executePriceMonitor);
+      restrictedApp.post(
+        '/flows/price-monitor',
+        authenticateToken,
+        requireRole(['user', 'admin']),
+        executePriceMonitor
+      );
 
       const response = await request(restrictedApp)
         .post('/flows/price-monitor')

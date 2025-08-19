@@ -1,6 +1,5 @@
+// Deprecated: legacy ESLint config is disabled. Use the flat config at repo root.
 module.exports = {
-  extends: ['../../.eslintrc.cjs'],
-  parserOptions: {
-    project: ['./tsconfig.json'],
-  },
+  root: true,
+  ignorePatterns: ['**/*'],
 };

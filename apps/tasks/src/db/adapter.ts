@@ -1,6 +1,7 @@
 import { env } from '../env';
 import { logger } from '@bharat-agents/shared';
 import { sqliteDb } from './sqlite';
+import type { JsonValue } from '@bharat-agents/shared';
 import { db as prismaDb } from './client';
 
 // =============================================================================
@@ -14,95 +15,105 @@ export interface DatabaseAdapter {
     name: string;
     description?: string;
     status?: string;
-    data?: any;
+    data?: JsonValue;
   }): Promise<void>;
-  
-  getTask(id: string): Promise<any | null>;
-  
-  updateTask(id: string, updates: Partial<{
-    name: string;
-    description: string;
-    status: string;
-    data: any;
-  }>): Promise<void>;
-  
-  listTasks(limit?: number, offset?: number): Promise<any[]>;
-  
+
+  getTask(id: string): Promise<JsonValue | null>;
+
+  updateTask(
+    id: string,
+    updates: Partial<{
+      name: string;
+      description: string;
+      status: string;
+      data: JsonValue;
+    }>
+  ): Promise<void>;
+
+  listTasks(limit?: number, offset?: number): Promise<JsonValue[]>;
+
   deleteTask(id: string): Promise<void>;
-  
+
   // Run operations
   createRun(run: {
     id: string;
     taskId: string;
     status?: string;
-    data?: any;
+    data?: JsonValue;
   }): Promise<void>;
-  
-  getRun(id: string): Promise<any | null>;
-  
-  updateRun(id: string, updates: Partial<{
-    status: string;
-    data: any;
-    result: any;
-    error: string;
-  }>): Promise<void>;
-  
-  listRuns(taskId?: string, limit?: number, offset?: number): Promise<any[]>;
-  
+
+  getRun(id: string): Promise<JsonValue | null>;
+
+  updateRun(
+    id: string,
+    updates: Partial<{
+      status: string;
+      data: JsonValue;
+      result: JsonValue;
+      error: string;
+    }>
+  ): Promise<void>;
+
+  listRuns(
+    taskId?: string,
+    limit?: number,
+    offset?: number
+  ): Promise<JsonValue[]>;
+
   // Agent operations
   createAgent(agent: {
     id: string;
     name: string;
     type: string;
-    config?: any;
+    config?: JsonValue;
   }): Promise<void>;
-  
-  getAgent(id: string): Promise<any | null>;
-  
-  listAgents(type?: string): Promise<any[]>;
-  
+
+  getAgent(id: string): Promise<JsonValue | null>;
+
+  listAgents(type?: string): Promise<JsonValue[]>;
+
   // Browser agent operations
   createBrowserAgent(agent: {
     id: string;
     name: string;
     description?: string;
-    config?: any;
+    config?: JsonValue;
   }): Promise<void>;
-  
-  getBrowserAgent(id: string): Promise<any | null>;
-  
-  listBrowserAgents(): Promise<any[]>;
-  
+
+  getBrowserAgent(id: string): Promise<JsonValue | null>;
+
+  listBrowserAgents(): Promise<JsonValue[]>;
+
   // Flow operations
   createFlow(flow: {
     id: string;
     name: string;
     description?: string;
-    config?: any;
+    config?: JsonValue;
   }): Promise<void>;
-  
-  getFlow(id: string): Promise<any | null>;
-  
-  listFlows(): Promise<any[]>;
-  
+
+  getFlow(id: string): Promise<JsonValue | null>;
+
+  listFlows(): Promise<JsonValue[]>;
+
   // Artifact operations
   createArtifact(artifact: {
     id: string;
     runId: string;
     name: string;
     type: string;
-    data?: any;
+    data?: JsonValue;
   }): Promise<void>;
-  
-  getArtifact(id: string): Promise<any | null>;
-  
-  listArtifacts(runId: string): Promise<any[]>;
-  
+
+  getArtifact(id: string): Promise<JsonValue | null>;
+
+  listArtifacts(runId: string): Promise<JsonValue[]>;
+
   // Utility methods
   transaction<T>(fn: () => T): Promise<T>;
-  
+
   close(): Promise<void>;
-  
+
   healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; error?: string }>;
 }
 
@@ -116,7 +127,7 @@ class PrismaAdapter implements DatabaseAdapter {
     name: string;
     description?: string;
     status?: string;
-    data?: any;
+    data?: JsonValue;
   }): Promise<void> {
     await prismaDb.task.create({
       data: {
@@ -129,18 +140,21 @@ class PrismaAdapter implements DatabaseAdapter {
     });
   }
 
-  async getTask(id: string): Promise<any | null> {
+  async getTask(id: string): Promise<JsonValue | null> {
     return await prismaDb.task.findUnique({
       where: { id },
     });
   }
 
-  async updateTask(id: string, updates: Partial<{
-    name: string;
-    description: string;
-    status: string;
-    data: any;
-  }>): Promise<void> {
+  async updateTask(
+    id: string,
+    updates: Partial<{
+      name: string;
+      description: string;
+      status: string;
+      data: JsonValue;
+    }>
+  ): Promise<void> {
     await prismaDb.task.update({
       where: { id },
       data: {
@@ -150,7 +164,10 @@ class PrismaAdapter implements DatabaseAdapter {
     });
   }
 
-  async listTasks(limit: number = 100, offset: number = 0): Promise<any[]> {
+  async listTasks(
+    limit: number = 100,
+    offset: number = 0
+  ): Promise<JsonValue[]> {
     return await prismaDb.task.findMany({
       take: limit,
       skip: offset,
@@ -168,7 +185,7 @@ class PrismaAdapter implements DatabaseAdapter {
     id: string;
     taskId: string;
     status?: string;
-    data?: any;
+    data?: JsonValue;
   }): Promise<void> {
     await prismaDb.run.create({
       data: {
@@ -180,33 +197,40 @@ class PrismaAdapter implements DatabaseAdapter {
     });
   }
 
-  async getRun(id: string): Promise<any | null> {
+  async getRun(id: string): Promise<JsonValue | null> {
     return await prismaDb.run.findUnique({
       where: { id },
     });
   }
 
-  async updateRun(id: string, updates: Partial<{
-    status: string;
-    data: any;
-    result: any;
-    error: string;
-  }>): Promise<void> {
-    const updateData: any = { ...updates };
-    
+  async updateRun(
+    id: string,
+    updates: Partial<{
+      status: string;
+      data: JsonValue;
+      result: JsonValue;
+      error: string;
+    }>
+  ): Promise<void> {
+    const updateData: Record<string, unknown> = { ...updates };
+
     if (updates.status === 'completed' || updates.status === 'failed') {
       updateData.completedAt = new Date();
     }
-    
+
     await prismaDb.run.update({
       where: { id },
       data: updateData,
     });
   }
 
-  async listRuns(taskId?: string, limit: number = 100, offset: number = 0): Promise<any[]> {
+  async listRuns(
+    taskId?: string,
+    limit: number = 100,
+    offset: number = 0
+  ): Promise<JsonValue[]> {
     const where = taskId ? { taskId } : {};
-    
+
     return await prismaDb.run.findMany({
       where,
       take: limit,
@@ -219,7 +243,7 @@ class PrismaAdapter implements DatabaseAdapter {
     id: string;
     name: string;
     type: string;
-    config?: any;
+    config?: JsonValue;
   }): Promise<void> {
     await prismaDb.agent.create({
       data: {
@@ -231,15 +255,15 @@ class PrismaAdapter implements DatabaseAdapter {
     });
   }
 
-  async getAgent(id: string): Promise<any | null> {
+  async getAgent(id: string): Promise<JsonValue | null> {
     return await prismaDb.agent.findUnique({
       where: { id },
     });
   }
 
-  async listAgents(type?: string): Promise<any[]> {
+  async listAgents(type?: string): Promise<JsonValue[]> {
     const where = type ? { type } : {};
-    
+
     return await prismaDb.agent.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -250,7 +274,7 @@ class PrismaAdapter implements DatabaseAdapter {
     id: string;
     name: string;
     description?: string;
-    config?: any;
+    config?: JsonValue;
   }): Promise<void> {
     await prismaDb.browserAgent.create({
       data: {
@@ -262,13 +286,13 @@ class PrismaAdapter implements DatabaseAdapter {
     });
   }
 
-  async getBrowserAgent(id: string): Promise<any | null> {
+  async getBrowserAgent(id: string): Promise<JsonValue | null> {
     return await prismaDb.browserAgent.findUnique({
       where: { id },
     });
   }
 
-  async listBrowserAgents(): Promise<any[]> {
+  async listBrowserAgents(): Promise<JsonValue[]> {
     return await prismaDb.browserAgent.findMany({
       orderBy: { createdAt: 'desc' },
     });
@@ -278,7 +302,7 @@ class PrismaAdapter implements DatabaseAdapter {
     id: string;
     name: string;
     description?: string;
-    config?: any;
+    config?: JsonValue;
   }): Promise<void> {
     await prismaDb.flow.create({
       data: {
@@ -290,13 +314,13 @@ class PrismaAdapter implements DatabaseAdapter {
     });
   }
 
-  async getFlow(id: string): Promise<any | null> {
+  async getFlow(id: string): Promise<JsonValue | null> {
     return await prismaDb.flow.findUnique({
       where: { id },
     });
   }
 
-  async listFlows(): Promise<any[]> {
+  async listFlows(): Promise<JsonValue[]> {
     return await prismaDb.flow.findMany({
       orderBy: { createdAt: 'desc' },
     });
@@ -307,7 +331,7 @@ class PrismaAdapter implements DatabaseAdapter {
     runId: string;
     name: string;
     type: string;
-    data?: any;
+    data?: JsonValue;
   }): Promise<void> {
     await prismaDb.artifact.create({
       data: {
@@ -320,13 +344,13 @@ class PrismaAdapter implements DatabaseAdapter {
     });
   }
 
-  async getArtifact(id: string): Promise<any | null> {
+  async getArtifact(id: string): Promise<JsonValue | null> {
     return await prismaDb.artifact.findUnique({
       where: { id },
     });
   }
 
-  async listArtifacts(runId: string): Promise<any[]> {
+  async listArtifacts(runId: string): Promise<JsonValue[]> {
     return await prismaDb.artifact.findMany({
       where: { runId },
       orderBy: { createdAt: 'desc' },
@@ -341,7 +365,10 @@ class PrismaAdapter implements DatabaseAdapter {
     await prismaDb.$disconnect();
   }
 
-  async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; error?: string }> {
+  async healthCheck(): Promise<{
+    status: 'healthy' | 'unhealthy';
+    error?: string;
+  }> {
     try {
       await prismaDb.$queryRaw`SELECT 1`;
       return { status: 'healthy' };
@@ -371,19 +398,19 @@ class DatabaseAdapterFactory {
         this.instance = new PrismaAdapter();
       }
     }
-    
+
     return this.instance!;
   }
 
   static async initialize(): Promise<void> {
     const adapter = this.getInstance();
-    
+
     // Test the connection
     const health = await adapter.healthCheck();
     if (health.status === 'unhealthy') {
       throw new Error(`Database health check failed: ${health.error}`);
     }
-    
+
     logger.info('Database adapter initialized successfully');
   }
 

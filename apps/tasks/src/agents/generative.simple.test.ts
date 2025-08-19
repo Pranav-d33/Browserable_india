@@ -26,7 +26,7 @@ describe('GenerativeAgent - Simple Tests', () => {
 
   it('should support both text and json formats', () => {
     const formats = ['text', 'json'] as const;
-    
+
     formats.forEach(format => {
       expect(['text', 'json']).toContain(format);
     });
@@ -39,7 +39,9 @@ describe('GenerativeAgent - Simple Tests', () => {
       schema: 'z.object({ name: z.string(), age: z.number() })',
     };
 
-    expect(inputWithSchema.schema).toBe('z.object({ name: z.string(), age: z.number() })');
+    expect(inputWithSchema.schema).toBe(
+      'z.object({ name: z.string(), age: z.number() })'
+    );
   });
 
   it('should default format to text when not specified', () => {

@@ -1,5 +1,12 @@
 import { logger } from '@bharat-agents/shared';
-import { BaseAgent, RunContext, RunResult, NodeResult, NodeStatus, RunStatus } from './base.js';
+import {
+  BaseAgent,
+  RunContext,
+  RunResult,
+  NodeResult,
+  NodeStatus,
+  RunStatus,
+} from './base.js';
 import { db } from '../db/client.js';
 
 export class EchoAgent implements BaseAgent {
@@ -12,14 +19,17 @@ export class EchoAgent implements BaseAgent {
     input: string;
     ctx: RunContext;
   }): Promise<NodeResult> {
-    const { runId, nodeId, input, ctx } = params;
+    const { runId, nodeId, input } = params;
 
-    logger.info({
-      agent: this.name,
-      runId,
-      nodeId,
-      inputLength: input.length,
-    }, 'Echo agent running node');
+    logger.info(
+      {
+        agent: this.name,
+        runId,
+        nodeId,
+        inputLength: input.length,
+      },
+      'Echo agent running node'
+    );
 
     try {
       // Update node status to running
@@ -47,12 +57,15 @@ export class EchoAgent implements BaseAgent {
         },
       });
 
-      logger.info({
-        agent: this.name,
-        runId,
-        nodeId,
-        status: NodeStatus.COMPLETED,
-      }, 'Echo agent node completed');
+      logger.info(
+        {
+          agent: this.name,
+          runId,
+          nodeId,
+          status: NodeStatus.COMPLETED,
+        },
+        'Echo agent node completed'
+      );
 
       return {
         status: NodeStatus.COMPLETED,
@@ -63,12 +76,15 @@ export class EchoAgent implements BaseAgent {
         },
       };
     } catch (error) {
-      logger.error({
-        agent: this.name,
-        runId,
-        nodeId,
-        error,
-      }, 'Echo agent node failed');
+      logger.error(
+        {
+          agent: this.name,
+          runId,
+          nodeId,
+          error,
+        },
+        'Echo agent node failed'
+      );
 
       // Update node with error
       await db.node.update({
@@ -95,11 +111,14 @@ export class EchoAgent implements BaseAgent {
   }): Promise<RunResult> {
     const { runId, input, ctx } = params;
 
-    logger.info({
-      agent: this.name,
-      runId,
-      inputLength: input.length,
-    }, 'Echo agent running task');
+    logger.info(
+      {
+        agent: this.name,
+        runId,
+        inputLength: input.length,
+      },
+      'Echo agent running task'
+    );
 
     try {
       // Create a node for this run
@@ -121,15 +140,19 @@ export class EchoAgent implements BaseAgent {
       });
 
       // Determine run status based on node result
-      const runStatus = nodeResult.status === NodeStatus.COMPLETED 
-        ? RunStatus.COMPLETED 
-        : RunStatus.FAILED;
+      const runStatus =
+        nodeResult.status === NodeStatus.COMPLETED
+          ? RunStatus.COMPLETED
+          : RunStatus.FAILED;
 
-      logger.info({
-        agent: this.name,
-        runId,
-        status: runStatus,
-      }, 'Echo agent task completed');
+      logger.info(
+        {
+          agent: this.name,
+          runId,
+          status: runStatus,
+        },
+        'Echo agent task completed'
+      );
 
       return {
         status: runStatus,
@@ -142,11 +165,14 @@ export class EchoAgent implements BaseAgent {
         },
       };
     } catch (error) {
-      logger.error({
-        agent: this.name,
-        runId,
-        error,
-      }, 'Echo agent task failed');
+      logger.error(
+        {
+          agent: this.name,
+          runId,
+          error,
+        },
+        'Echo agent task failed'
+      );
 
       return {
         status: RunStatus.FAILED,

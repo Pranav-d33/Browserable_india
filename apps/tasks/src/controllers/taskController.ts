@@ -1,15 +1,15 @@
-import { Request, Response } from 'express';
+import type { Response } from 'express';
 import { logger, AgentKind } from '@bharat-agents/shared';
 import { jarvis } from '../orchestrator/jarvis.js';
-import { db } from '../db/client.js';
+// import { db } from '../db/client.js';
 import { idempotencyService } from '../services/idempotency.js';
-import { recordTaskCreation, recordTaskExecution } from '../services/metrics.js';
+import { recordTaskCreation } from '../services/metrics.js';
 import { sendErrorResponse } from '../utils/errorResponse.js';
-import { 
-  CreateTaskRequest, 
-  TaskResponse, 
-  createSanitizedResponse, 
-  taskResponseSchema 
+import {
+  CreateTaskRequest,
+  TaskResponse,
+  createSanitizedResponse,
+  taskResponseSchema,
 } from '../schemas/validation.js';
 import { getCurrentUserId } from '../security/auth.js';
 import { AuthenticatedRequest } from '../security/auth.js';
@@ -39,13 +39,16 @@ export const createTask = async (
     return;
   }
 
-  logger.info({
-    userId,
-    agent,
-    inputLength: input.length,
-    hasOptions: !!options,
-    hasIdempotencyKey: !!idempotencyKey,
-  }, 'Creating new task');
+  logger.info(
+    {
+      userId,
+      agent,
+      inputLength: input.length,
+      hasOptions: !!options,
+      hasIdempotencyKey: !!idempotencyKey,
+    },
+    'Creating new task'
+  );
 
   try {
     // Handle idempotency if key is provided
@@ -53,19 +56,24 @@ export const createTask = async (
       // Validate idempotency key format
       if (!idempotencyService.validateKey(idempotencyKey)) {
         sendErrorResponse(req, res, 'Invalid Idempotency-Key', 400, {
-          message: 'Idempotency key must be alphanumeric with hyphens/underscores only',
+          message:
+            'Idempotency key must be alphanumeric with hyphens/underscores only',
         });
         return;
       }
 
       // Check for existing idempotency key
-      const idempotencyResult = await idempotencyService.checkIdempotency(idempotencyKey);
-      
+      const idempotencyResult =
+        await idempotencyService.checkIdempotency(idempotencyKey);
+
       if (idempotencyResult.isDuplicate && idempotencyResult.existingRun) {
-        logger.info({
-          idempotencyKey,
-          existingRunId: idempotencyResult.existingRunId,
-        }, 'Returning existing run due to idempotency key');
+        logger.info(
+          {
+            idempotencyKey,
+            existingRunId: idempotencyResult.existingRunId,
+          },
+          'Returning existing run due to idempotency key'
+        );
 
         // Return the existing run
         res.status(200).json({
@@ -113,11 +121,14 @@ export const createTask = async (
       await idempotencyService.storeIdempotency(idempotencyKey, result.runId);
     }
 
-    logger.info({
-      runId: result.runId,
-      status: result.status,
-      agent: agentKind || 'auto-selected',
-    }, 'Task created successfully');
+    logger.info(
+      {
+        runId: result.runId,
+        status: result.status,
+        agent: agentKind || 'auto-selected',
+      },
+      'Task created successfully'
+    );
 
     // Record metrics
     recordTaskCreation(agentKind || 'auto', result.status);
@@ -128,7 +139,10 @@ export const createTask = async (
       status: result.status,
       agent: agentKind || 'auto',
       input: input,
-      output: result.output?.result as string || result.output?.toString() || undefined,
+      output:
+        (result.output?.result as string) ||
+        result.output?.toString() ||
+        undefined,
       artifacts: [], // TODO: Add artifacts support
       createdAt: new Date().toISOString(),
     });
@@ -137,10 +151,10 @@ export const createTask = async (
     res.status(201).json(responseData);
   } catch (error) {
     logger.error({ error, agent, input, userId }, 'Failed to create task');
-    
+
     // Record failed task creation
     recordTaskCreation(agent || 'unknown', 'FAILED');
-    
+
     throw error; // Let the error middleware handle it
   }
 };
@@ -168,7 +182,7 @@ export const getRunDetails = async (
   try {
     // Get run from Jarvis orchestrator with RBAC enforcement
     const run = await jarvis.getRun(runId, userId);
-    
+
     if (!run) {
       sendErrorResponse(req, res, 'Run not found', 404, {
         message: `Run with ID ${runId} not found`,
@@ -180,7 +194,14 @@ export const getRunDetails = async (
     const nodes = run.nodes || [];
 
     // TODO: Get artifacts for this run
-    const artifacts: any[] = [];
+    const artifacts: Array<{
+      id?: string;
+      name?: string;
+      type?: string;
+      url?: string;
+      size?: number;
+      createdAt?: string;
+    }> = [];
 
     // Create response
     const responseData = {
@@ -214,17 +235,16 @@ export const getRunDetails = async (
     };
 
     res.status(200).json(responseData);
-
   } catch (error) {
     logger.error({ error, runId, userId }, 'Failed to get run details');
-    
+
     if (error instanceof Error && error.message.includes('Access denied')) {
       sendErrorResponse(req, res, 'Access denied', 403, {
         message: error.message,
       });
       return;
     }
-    
+
     throw error; // Let the error middleware handle it
   }
 };
@@ -238,7 +258,10 @@ export const getRunAuditLogs = async (
   res: Response
 ): Promise<void> => {
   const { id: runId } = req.params as { id: string };
-  const { cursor, limit = 50 } = req.query as { cursor?: string; limit?: number };
+  const { cursor, limit = 50 } = req.query as {
+    cursor?: string;
+    limit?: number;
+  };
   const userId = getCurrentUserId(req);
 
   if (!userId) {
@@ -253,7 +276,7 @@ export const getRunAuditLogs = async (
   try {
     // First, verify the run exists and user has access
     const run = await jarvis.getRun(runId, userId);
-    
+
     if (!run) {
       sendErrorResponse(req, res, 'Run not found', 404, {
         message: `Run with ID ${runId} not found`,
@@ -262,7 +285,9 @@ export const getRunAuditLogs = async (
     }
 
     // Import audit service dynamically to avoid circular dependencies
-    const { getAuditLogs, getAuditStats } = await import('../services/audit.js');
+    const { getAuditLogs, getAuditStats } = await import(
+      '../services/audit.js'
+    );
 
     // Get audit logs with cursor-based pagination
     const auditResult = await getAuditLogs(runId, cursor, limit);
@@ -293,25 +318,30 @@ export const getRunAuditLogs = async (
       },
     };
 
-    logger.info({
-      runId,
-      logCount: transformedLogs.length,
-      hasMore: auditResult.hasMore,
-      hasNextCursor: !!auditResult.nextCursor,
-    }, 'Successfully retrieved audit logs for run');
+    logger.info(
+      {
+        runId,
+        logCount: transformedLogs.length,
+        hasMore: auditResult.hasMore,
+        hasNextCursor: !!auditResult.nextCursor,
+      },
+      'Successfully retrieved audit logs for run'
+    );
 
     res.status(200).json(responseData);
-
   } catch (error) {
-    logger.error({ error, runId, userId, cursor, limit }, 'Failed to get audit logs for run');
-    
+    logger.error(
+      { error, runId, userId, cursor, limit },
+      'Failed to get audit logs for run'
+    );
+
     if (error instanceof Error && error.message.includes('Access denied')) {
       sendErrorResponse(req, res, 'Access denied', 403, {
         message: error.message,
       });
       return;
     }
-    
+
     throw error; // Let the error middleware handle it
   }
 };

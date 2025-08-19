@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { record, getAuditLogs, getAuditStats, type AuditEvent } from './audit.js';
+import {
+  record,
+  getAuditLogs,
+  getAuditStats,
+  type AuditEvent,
+} from './audit.js';
 import { PrismaClient } from '@prisma/client';
 
 // Mock Prisma client
@@ -237,7 +242,9 @@ describe('Audit Service', () => {
         action: 'test_action',
         status: 'OK',
         durationMs: 100,
-        createdAt: new Date(`2023-01-${String(i + 1).padStart(2, '0')}T00:00:00Z`),
+        createdAt: new Date(
+          `2023-01-${String(i + 1).padStart(2, '0')}T00:00:00Z`
+        ),
       }));
 
       const mockFindMany = vi.fn().mockResolvedValue(mockLogs);
@@ -276,9 +283,10 @@ describe('Audit Service', () => {
 
   describe('getAuditStats', () => {
     it('should retrieve audit statistics', async () => {
-      const mockCount = vi.fn()
+      const mockCount = vi
+        .fn()
         .mockResolvedValueOnce(100) // totalEvents
-        .mockResolvedValueOnce(80)  // successCount
+        .mockResolvedValueOnce(80) // successCount
         .mockResolvedValueOnce(20); // errorCount
 
       const mockAggregate = vi.fn().mockResolvedValue({

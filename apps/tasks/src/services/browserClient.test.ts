@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { BrowserClient, createBrowserClient, ConsoleAuditLogger } from './browserClient';
-import type { BrowserAction, BrowserSession, ExecuteActionRequest } from './browserClient';
+import {
+  BrowserClient,
+  createBrowserClient,
+  ConsoleAuditLogger,
+} from './browserClient';
+import type {
+  BrowserAction,
+  BrowserSession,
+  ExecuteActionRequest,
+} from './browserClient';
 
 // Mock fetch
 const mockFetch = vi.fn();
@@ -52,7 +60,7 @@ describe('BrowserClient', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
+            Accept: 'application/json',
           },
         })
       );
@@ -79,7 +87,7 @@ describe('BrowserClient', () => {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
+            Accept: 'application/json',
           },
         })
       );
@@ -201,7 +209,11 @@ describe('BrowserClient', () => {
         json: async () => mockResponse,
       });
 
-      const action = await client.click(sessionId, 'https://example.com', '#submit-button');
+      const action = await client.click(
+        sessionId,
+        'https://example.com',
+        '#submit-button'
+      );
 
       expect(action.type).toBe('click');
       expect(action.selector).toBe('#submit-button');
@@ -246,7 +258,12 @@ describe('BrowserClient', () => {
         json: async () => mockResponse,
       });
 
-      const action = await client.type(sessionId, 'https://example.com', '#search-input', 'search term');
+      const action = await client.type(
+        sessionId,
+        'https://example.com',
+        '#search-input',
+        'search term'
+      );
 
       expect(action.type).toBe('type');
       expect(action.selector).toBe('#search-input');
@@ -279,7 +296,12 @@ describe('BrowserClient', () => {
         json: async () => mockResponse,
       });
 
-      const action = await client.waitFor(sessionId, 'https://example.com', '#loading-spinner', 5000);
+      const action = await client.waitFor(
+        sessionId,
+        'https://example.com',
+        '#loading-spinner',
+        5000
+      );
 
       expect(action.type).toBe('wait');
       expect(action.selector).toBe('#loading-spinner');
@@ -342,7 +364,11 @@ describe('BrowserClient', () => {
         json: async () => mockResponse,
       });
 
-      const action = await client.extract(sessionId, 'https://example.com', '.content');
+      const action = await client.extract(
+        sessionId,
+        'https://example.com',
+        '.content'
+      );
 
       expect(action.type).toBe('extract');
       expect(action.selector).toBe('.content');
@@ -534,7 +560,9 @@ describe('BrowserClient', () => {
         }),
       });
 
-      await expect(client.waitForAction('action-123', 100)).rejects.toThrow('Timeout waiting for action completion');
+      await expect(client.waitForAction('action-123', 100)).rejects.toThrow(
+        'Timeout waiting for action completion'
+      );
     });
   });
 
@@ -546,7 +574,9 @@ describe('BrowserClient', () => {
         statusText: 'Internal Server Error',
       });
 
-      await expect(client.createSession()).rejects.toThrow('HTTP 500: Internal Server Error');
+      await expect(client.createSession()).rejects.toThrow(
+        'HTTP 500: Internal Server Error'
+      );
     }, 10000);
 
     it('should handle network errors', async () => {
@@ -583,7 +613,9 @@ describe('BrowserClient', () => {
         statusText: 'Bad Request',
       });
 
-      await expect(client.createSession()).rejects.toThrow('HTTP 400: Bad Request');
+      await expect(client.createSession()).rejects.toThrow(
+        'HTTP 400: Bad Request'
+      );
       expect(mockFetch).toHaveBeenCalledTimes(1); // No retry
     });
   });
@@ -624,7 +656,11 @@ describe('BrowserClient', () => {
 
     it('should create client with audit logger', () => {
       const auditLogger = new ConsoleAuditLogger();
-      const client = createBrowserClient('https://browser.example.com', {}, auditLogger);
+      const client = createBrowserClient(
+        'https://browser.example.com',
+        {},
+        auditLogger
+      );
 
       expect(client).toBeInstanceOf(BrowserClient);
     });

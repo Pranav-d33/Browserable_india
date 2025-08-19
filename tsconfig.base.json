@@ -4,6 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "nodenext",
     "lib": ["ES2022"],
+    "types": ["node", "undici-types"],
     "allowJs": true,
     "strict": true,
     "esModuleInterop": true,

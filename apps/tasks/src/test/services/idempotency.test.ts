@@ -34,7 +34,7 @@ describe('IdempotencyService', () => {
         'key/with/slashes',
         'key\\with\\backslashes',
         'key"with"quotes',
-        'key\'with\'apostrophes',
+        "key'with'apostrophes",
         'a'.repeat(256), // Too long
       ];
 
@@ -55,7 +55,8 @@ describe('IdempotencyService', () => {
     it('should handle database errors gracefully', async () => {
       // This test would require mocking the database to simulate errors
       // For now, we test that the service doesn't throw
-      const result = await idempotencyService.checkIdempotency('error-test-key');
+      const result =
+        await idempotencyService.checkIdempotency('error-test-key');
       expect(result.isDuplicate).toBe(false);
     });
   });

@@ -1,4 +1,8 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
 import { logger } from '@bharat-agents/shared';
 import { env } from '../env.js';
 
@@ -35,7 +39,7 @@ export class DataProtectionService {
   constructor() {
     this.enabled = env.ENABLE_ARTIFACT_ENCRYPTION;
     this.bucket = env.MINIO_BUCKET || 'artifacts';
-    
+
     if (this.enabled && env.MINIO_ENDPOINT) {
       this.s3Client = new S3Client({
         endpoint: env.MINIO_ENDPOINT,
@@ -46,10 +50,14 @@ export class DataProtectionService {
         region: 'us-east-1', // MinIO default region
         forcePathStyle: true, // Required for MinIO
       });
-      
-      logger.info('Data protection service initialized with MinIO SSE-S3 encryption');
+
+      logger.info(
+        'Data protection service initialized with MinIO SSE-S3 encryption'
+      );
     } else {
-      logger.info('Data protection service initialized without encryption (KMS planned for Phase 3)');
+      logger.info(
+        'Data protection service initialized without encryption (KMS planned for Phase 3)'
+      );
     }
   }
 
@@ -59,10 +67,15 @@ export class DataProtectionService {
   async uploadArtifact(
     artifactId: string,
     data: Buffer,
-    metadata: Omit<ArtifactMetadata, 'id' | 'encrypted' | 'encryptionMethod' | 'createdAt'>
+    metadata: Omit<
+      ArtifactMetadata,
+      'id' | 'encrypted' | 'encryptionMethod' | 'createdAt'
+    >
   ): Promise<UploadResult> {
     if (!this.s3Client) {
-      throw new Error('S3 client not configured. Set MINIO_ENDPOINT and related environment variables.');
+      throw new Error(
+        'S3 client not configured. Set MINIO_ENDPOINT and related environment variables.'
+      );
     }
 
     const artifactMetadata: ArtifactMetadata = {
@@ -85,8 +98,8 @@ export class DataProtectionService {
           'artifact-id': artifactId,
           'artifact-type': metadata.type,
           'original-name': metadata.originalName,
-          'size': metadata.size.toString(),
-          'encrypted': this.enabled.toString(),
+          size: metadata.size.toString(),
+          encrypted: this.enabled.toString(),
           'encryption-method': this.enabled ? 'SSE-S3' : 'none',
           'created-at': artifactMetadata.createdAt.toISOString(),
         },
@@ -119,7 +132,9 @@ export class DataProtectionService {
    */
   async downloadArtifact(artifactId: string): Promise<DownloadResult> {
     if (!this.s3Client) {
-      throw new Error('S3 client not configured. Set MINIO_ENDPOINT and related environment variables.');
+      throw new Error(
+        'S3 client not configured. Set MINIO_ENDPOINT and related environment variables.'
+      );
     }
 
     const key = `artifacts/${artifactId}`;
@@ -131,7 +146,7 @@ export class DataProtectionService {
       });
 
       const response = await this.s3Client.send(command);
-      
+
       if (!response.Body) {
         throw new Error('No data received from S3');
       }

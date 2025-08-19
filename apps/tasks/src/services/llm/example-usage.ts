@@ -1,10 +1,10 @@
-import { llmFactory, getLLM } from './index';
+import { getLLM } from './index';
 
 // =============================================================================
 // Example Usage of LLM Provider Adapters
 // =============================================================================
 
-async function exampleUsage() {
+async function exampleUsage(): Promise<void> {
   console.log('=== LLM Provider Adapters Example ===\n');
 
   // Get the LLM factory instance
@@ -84,7 +84,7 @@ async function exampleUsage() {
     ];
 
     const response4 = await llm.complete({
-      prompt: 'What\'s the weather like in New York?',
+      prompt: "What's the weather like in New York?",
       model: 'test-model',
       tools,
     });
@@ -136,7 +136,10 @@ async function exampleUsage() {
       model: 'test-model',
     });
   } catch (error) {
-    console.log('Expected error caught:', error instanceof Error ? error.message : error);
+    console.log(
+      'Expected error caught:',
+      error instanceof Error ? error.message : error
+    );
     console.log('');
   }
 
@@ -144,15 +147,15 @@ async function exampleUsage() {
 }
 
 // Example with OpenAI provider (if available)
-async function openaiExample() {
+async function openaiExample(): Promise<void> {
   console.log('=== OpenAI Provider Example ===\n');
 
   const llm = getLLM();
-  
+
   // Check if OpenAI provider is available
   if (llm.listProviders().includes('openai')) {
     console.log('OpenAI provider is available');
-    
+
     try {
       const response = await llm.complete({
         prompt: 'Explain quantum computing in simple terms',
@@ -161,7 +164,7 @@ async function openaiExample() {
         temperature: 0.7,
         maxTokens: 150,
       });
-      
+
       console.log('OpenAI Response:', response.text);
       console.log('Input tokens:', response.inputTokens);
       console.log('Output tokens:', response.outputTokens);

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AgentKind, AgentRunInput, AgentRunOutput } from '@bharat-agents/shared';
+import { AgentKind, AgentRunOutput } from '@bharat-agents/shared';
 import { logger } from '@bharat-agents/shared';
 
 // =============================================================================
@@ -35,7 +35,22 @@ export type FormField = z.infer<typeof formFieldSchema>;
 /**
  * Generate browser steps for form autofill
  */
-export function generateFormAutofillSteps(input: FormAutofillInput): any[] {
+type BrowserStep = {
+  name: string;
+  type: 'navigation' | 'wait' | 'interaction' | 'artifact';
+  action:
+    | 'goto'
+    | 'waitFor'
+    | 'type'
+    | 'click'
+    | 'waitForNavigation'
+    | 'screenshot';
+  params: Record<string, unknown>;
+};
+
+export function generateFormAutofillSteps(
+  input: FormAutofillInput
+): BrowserStep[] {
   const steps = [
     {
       name: 'navigate_to_form',
@@ -58,10 +73,10 @@ export function generateFormAutofillSteps(input: FormAutofillInput): any[] {
         name: `fill_field_${index}`,
         type: 'interaction',
         action: 'type',
-        params: { 
-          selector: field.selector, 
+        params: {
+          selector: field.selector,
           text: field.value,
-          clear: true 
+          clear: true,
         },
       }
     );
@@ -96,9 +111,9 @@ export function generateFormAutofillSteps(input: FormAutofillInput): any[] {
     name: 'take_screenshot',
     type: 'artifact',
     action: 'screenshot',
-    params: { 
+    params: {
       filename: 'form-autofill-{{timestamp}}',
-      fullPage: true 
+      fullPage: true,
     },
   });
 
@@ -114,34 +129,37 @@ export function generateFormAutofillSteps(input: FormAutofillInput): any[] {
  */
 export async function executeFormAutofill(
   input: FormAutofillInput,
-  browserSteps: any[]
+  _browserSteps: BrowserStep[]
 ): Promise<AgentRunOutput> {
   const startTime = Date.now();
-  
-  logger.info({
-    url: input.url,
-    fieldsCount: input.fields.length,
-    hasSubmitSelector: !!input.submitSelector,
-  }, 'Starting form autofill flow');
+
+  logger.info(
+    {
+      url: input.url,
+      fieldsCount: input.fields.length,
+      hasSubmitSelector: !!input.submitSelector,
+    },
+    'Starting form autofill flow'
+  );
 
   try {
     // Simulate browser execution steps
     // In a real implementation, these would be executed by the browser agent
-    const results: Record<string, any> = {
+    const results: Record<string, unknown> = {
       navigate_to_form: { status: 'completed', url: input.url },
     };
 
     // Simulate field filling
     let fieldsFilled = 0;
     input.fields.forEach((field, index) => {
-      results[`wait_for_field_${index}`] = { 
-        status: 'completed', 
-        selector: field.selector 
-      };
-      results[`fill_field_${index}`] = { 
-        status: 'completed', 
+      results[`wait_for_field_${index}`] = {
+        status: 'completed',
         selector: field.selector,
-        value: field.value 
+      };
+      results[`fill_field_${index}`] = {
+        status: 'completed',
+        selector: field.selector,
+        value: field.value,
       };
       fieldsFilled++;
     });
@@ -151,25 +169,25 @@ export async function executeFormAutofill(
 
     // Simulate submit if selector provided
     if (input.submitSelector) {
-      results.wait_for_submit_button = { 
-        status: 'completed', 
-        selector: input.submitSelector 
+      results.wait_for_submit_button = {
+        status: 'completed',
+        selector: input.submitSelector,
       };
-      results.click_submit_button = { 
-        status: 'completed', 
-        selector: input.submitSelector 
+      results.click_submit_button = {
+        status: 'completed',
+        selector: input.submitSelector,
       };
-      results.wait_for_navigation = { 
-        status: 'completed', 
-        newUrl: `${input.url}/submitted` 
+      results.wait_for_navigation = {
+        status: 'completed',
+        newUrl: `${input.url}/submitted`,
       };
       finalUrl = `${input.url}/submitted`;
       submitted = true;
     }
 
     // Simulate screenshot
-    results.take_screenshot = { 
-      status: 'completed', 
+    results.take_screenshot = {
+      status: 'completed',
       artifact: {
         id: `screenshot-${Date.now()}`,
         name: 'form-autofill-screenshot',
@@ -177,7 +195,7 @@ export async function executeFormAutofill(
         url: `https://storage.example.com/screenshots/form-autofill-${Date.now()}.png`,
         size: 204800,
         createdAt: new Date().toISOString(),
-      }
+      },
     };
 
     // Create output
@@ -190,12 +208,15 @@ export async function executeFormAutofill(
 
     const duration = Date.now() - startTime;
 
-    logger.info({
-      finalUrl: output.finalUrl,
-      fieldsFilled: output.fieldsFilled,
-      submitted: output.submitted,
-      duration,
-    }, 'Form autofill flow completed successfully');
+    logger.info(
+      {
+        finalUrl: output.finalUrl,
+        fieldsFilled: output.fieldsFilled,
+        submitted: output.submitted,
+        duration,
+      },
+      'Form autofill flow completed successfully'
+    );
 
     return {
       result: output,
@@ -211,16 +232,18 @@ export async function executeFormAutofill(
       },
       artifacts: [results.take_screenshot.artifact],
     };
-
   } catch (error) {
     const duration = Date.now() - startTime;
-    
-    logger.error({
-      error: error instanceof Error ? error.message : String(error),
-      url: input.url,
-      fieldsCount: input.fields.length,
-      duration,
-    }, 'Form autofill flow failed');
+
+    logger.error(
+      {
+        error: error instanceof Error ? error.message : String(error),
+        url: input.url,
+        fieldsCount: input.fields.length,
+        duration,
+      },
+      'Form autofill flow failed'
+    );
 
     throw error;
   }

@@ -1,28 +1,18 @@
 // Example usage of the shared package modules
 
-const { 
+const {
   // IDs
-  newRunId, 
-  newUserId, 
+  newRunId,
+  newUserId,
   isId,
-  
-  // RBAC
-  requireRole, 
-  requireAdmin, 
-  requireUser,
-  
+
   // Metrics
-  recordAgentRun, 
-  recordLLMTokens, 
-  recordLLMCost,
-  
+  recordAgentRun,
+  recordLLMTokens,
+
   // Costs
-  trackLLMCost, 
+  trackLLMCost,
   calculateTotalCost,
-  
-  // Telemetry
-  startTelemetry, 
-  shutdownTelemetry
 } = require('./dist/index.js');
 
 // Example 1: Using IDs
@@ -39,7 +29,7 @@ const cost = trackLLMCost({
   provider: 'openai',
   model: 'gpt-4',
   inputTokens: 1000,
-  outputTokens: 500
+  outputTokens: 500,
 });
 console.log('LLM Cost:', cost);
 
@@ -66,7 +56,15 @@ console.log('await shutdownTelemetry();');
 
 // Example 6: Cost calculations
 console.log('\n=== Cost Calculations ===');
-const totalCost = calculateTotalCost('anthropic', 'claude-3-sonnet', 2000, 1000);
-console.log('Claude 3 Sonnet cost for 2000 input + 1000 output tokens:', totalCost);
+const totalCost = calculateTotalCost(
+  'anthropic',
+  'claude-3-sonnet',
+  2000,
+  1000
+);
+console.log(
+  'Claude 3 Sonnet cost for 2000 input + 1000 output tokens:',
+  totalCost
+);
 
 console.log('\n=== Example Complete ===');

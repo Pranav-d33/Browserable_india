@@ -17,7 +17,7 @@ export class LocalFileStorage {
     this.uploadDir = path.resolve(process.cwd(), baseDir);
     this.publicDir = path.join(this.uploadDir, 'public');
     this.privateDir = path.join(this.uploadDir, 'private');
-    
+
     this.ensureDirectories();
   }
 
@@ -26,7 +26,10 @@ export class LocalFileStorage {
       await fs.mkdir(this.uploadDir, { recursive: true });
       await fs.mkdir(this.publicDir, { recursive: true });
       await fs.mkdir(this.privateDir, { recursive: true });
-      logger.info({ uploadDir: this.uploadDir }, 'Local file storage directories ensured');
+      logger.info(
+        { uploadDir: this.uploadDir },
+        'Local file storage directories ensured'
+      );
     } catch (error) {
       logger.error({ error }, 'Failed to create upload directories');
       throw error;
@@ -48,7 +51,7 @@ export class LocalFileStorage {
     const ext = path.extname(originalName);
     const name = path.basename(originalName, ext);
     const sanitizedName = this.sanitizeFilename(name);
-    
+
     return `${sanitizedName}_${timestamp}_${random}${ext}`;
   }
 
@@ -58,19 +61,19 @@ export class LocalFileStorage {
     options: {
       isPublic?: boolean;
       contentType?: string;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, string>;
     } = {}
   ): Promise<{ url: string; path: string; filename: string }> {
     const { isPublic = false, contentType, metadata } = options;
-    
+
     // Sanitize and generate unique filename
     const sanitizedFilename = this.sanitizeFilename(filename);
     const uniqueFilename = this.generateUniqueFilename(sanitizedFilename);
-    
+
     // Determine storage directory
     const storageDir = isPublic ? this.publicDir : this.privateDir;
     const filePath = path.join(storageDir, uniqueFilename);
-    
+
     try {
       // Write file
       if (Buffer.isBuffer(data)) {
@@ -82,38 +85,50 @@ export class LocalFileStorage {
       // Save metadata if provided
       if (metadata) {
         const metadataPath = `${filePath}.meta.json`;
-        await fs.writeFile(metadataPath, JSON.stringify({
-          originalName: filename,
-          contentType,
-          metadata,
-          uploadedAt: new Date().toISOString(),
-        }, null, 2));
+        await fs.writeFile(
+          metadataPath,
+          JSON.stringify(
+            {
+              originalName: filename,
+              contentType,
+              metadata,
+              uploadedAt: new Date().toISOString(),
+            },
+            null,
+            2
+          )
+        );
       }
 
-      const url = isPublic 
+      const url = isPublic
         ? `/uploads/public/${uniqueFilename}`
         : `/uploads/private/${uniqueFilename}`;
 
-      logger.debug({
-        originalName: filename,
-        filename: uniqueFilename,
-        path: filePath,
-        url,
-        size: Buffer.isBuffer(data) ? data.length : data.length,
-        isPublic,
-      }, 'File saved successfully');
+      logger.debug(
+        {
+          originalName: filename,
+          filename: uniqueFilename,
+          path: filePath,
+          url,
+          size: Buffer.isBuffer(data) ? data.length : data.length,
+          isPublic,
+        },
+        'File saved successfully'
+      );
 
       return {
         url,
         path: filePath,
         filename: uniqueFilename,
       };
-
     } catch (error) {
-      logger.error({
-        filename: uniqueFilename,
-        error: error instanceof Error ? error.message : String(error),
-      }, 'Failed to save file');
+      logger.error(
+        {
+          filename: uniqueFilename,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Failed to save file'
+      );
       throw error;
     }
   }
@@ -124,60 +139,72 @@ export class LocalFileStorage {
     options: {
       isPublic?: boolean;
       contentType?: string;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, string>;
     } = {}
   ): Promise<{ url: string; path: string; filename: string }> {
     const { isPublic = false, contentType, metadata } = options;
-    
+
     // Sanitize and generate unique filename
     const sanitizedFilename = this.sanitizeFilename(filename);
     const uniqueFilename = this.generateUniqueFilename(sanitizedFilename);
-    
+
     // Determine storage directory
     const storageDir = isPublic ? this.publicDir : this.privateDir;
     const filePath = path.join(storageDir, uniqueFilename);
-    
+
     try {
       // Create write stream
       const writeStream = createWriteStream(filePath);
-      
+
       // Pipe the data
       await pipeline(stream, writeStream);
 
       // Save metadata if provided
       if (metadata) {
         const metadataPath = `${filePath}.meta.json`;
-        await fs.writeFile(metadataPath, JSON.stringify({
-          originalName: filename,
-          contentType,
-          metadata,
-          uploadedAt: new Date().toISOString(),
-        }, null, 2));
+        await fs.writeFile(
+          metadataPath,
+          JSON.stringify(
+            {
+              originalName: filename,
+              contentType,
+              metadata,
+              uploadedAt: new Date().toISOString(),
+            },
+            null,
+            2
+          )
+        );
       }
 
-      const url = isPublic 
+      const url = isPublic
         ? `/uploads/public/${uniqueFilename}`
         : `/uploads/private/${uniqueFilename}`;
 
-      logger.debug({
-        originalName: filename,
-        filename: uniqueFilename,
-        path: filePath,
-        url,
-        isPublic,
-      }, 'File saved from stream successfully');
+      logger.debug(
+        {
+          originalName: filename,
+          filename: uniqueFilename,
+          path: filePath,
+          url,
+          isPublic,
+        },
+        'File saved from stream successfully'
+      );
 
       return {
         url,
         path: filePath,
         filename: uniqueFilename,
       };
-
     } catch (error) {
-      logger.error({
-        filename: uniqueFilename,
-        error: error instanceof Error ? error.message : String(error),
-      }, 'Failed to save file from stream');
+      logger.error(
+        {
+          filename: uniqueFilename,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Failed to save file from stream'
+      );
       throw error;
     }
   }
@@ -185,35 +212,47 @@ export class LocalFileStorage {
   async getFile(filename: string, isPublic: boolean = false): Promise<Buffer> {
     const storageDir = isPublic ? this.publicDir : this.privateDir;
     const filePath = path.join(storageDir, this.sanitizeFilename(filename));
-    
+
     try {
       const data = await fs.readFile(filePath);
       logger.debug({ filename, path: filePath }, 'File retrieved successfully');
       return data;
     } catch (error) {
-      logger.error({
-        filename,
-        path: filePath,
-        error: error instanceof Error ? error.message : String(error),
-      }, 'Failed to retrieve file');
+      logger.error(
+        {
+          filename,
+          path: filePath,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Failed to retrieve file'
+      );
       throw error;
     }
   }
 
-  async getFileStream(filename: string, isPublic: boolean = false): Promise<NodeJS.ReadableStream> {
+  async getFileStream(
+    filename: string,
+    isPublic: boolean = false
+  ): Promise<NodeJS.ReadableStream> {
     const storageDir = isPublic ? this.publicDir : this.privateDir;
     const filePath = path.join(storageDir, this.sanitizeFilename(filename));
-    
+
     try {
       const stream = createReadStream(filePath);
-      logger.debug({ filename, path: filePath }, 'File stream created successfully');
+      logger.debug(
+        { filename, path: filePath },
+        'File stream created successfully'
+      );
       return stream;
     } catch (error) {
-      logger.error({
-        filename,
-        path: filePath,
-        error: error instanceof Error ? error.message : String(error),
-      }, 'Failed to create file stream');
+      logger.error(
+        {
+          filename,
+          path: filePath,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Failed to create file stream'
+      );
       throw error;
     }
   }
@@ -222,33 +261,39 @@ export class LocalFileStorage {
     const storageDir = isPublic ? this.publicDir : this.privateDir;
     const filePath = path.join(storageDir, this.sanitizeFilename(filename));
     const metadataPath = `${filePath}.meta.json`;
-    
+
     try {
       // Delete main file
       await fs.unlink(filePath);
-      
+
       // Delete metadata file if it exists
       try {
         await fs.unlink(metadataPath);
       } catch {
         // Metadata file doesn't exist, ignore
       }
-      
+
       logger.debug({ filename, path: filePath }, 'File deleted successfully');
     } catch (error) {
-      logger.error({
-        filename,
-        path: filePath,
-        error: error instanceof Error ? error.message : String(error),
-      }, 'Failed to delete file');
+      logger.error(
+        {
+          filename,
+          path: filePath,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Failed to delete file'
+      );
       throw error;
     }
   }
 
-  async fileExists(filename: string, isPublic: boolean = false): Promise<boolean> {
+  async fileExists(
+    filename: string,
+    isPublic: boolean = false
+  ): Promise<boolean> {
     const storageDir = isPublic ? this.publicDir : this.privateDir;
     const filePath = path.join(storageDir, this.sanitizeFilename(filename));
-    
+
     try {
       await fs.access(filePath);
       return true;
@@ -257,20 +302,23 @@ export class LocalFileStorage {
     }
   }
 
-  async getFileInfo(filename: string, isPublic: boolean = false): Promise<{
+  async getFileInfo(
+    filename: string,
+    isPublic: boolean = false
+  ): Promise<{
     size: number;
     lastModified: Date;
     contentType?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, string>;
   } | null> {
     const storageDir = isPublic ? this.publicDir : this.privateDir;
     const filePath = path.join(storageDir, this.sanitizeFilename(filename));
     const metadataPath = `${filePath}.meta.json`;
-    
+
     try {
       const stats = await fs.stat(filePath);
-      let metadata: Record<string, any> | undefined;
-      
+      let metadata: Record<string, string> | undefined;
+
       // Try to read metadata
       try {
         const metadataContent = await fs.readFile(metadataPath, 'utf8');
@@ -278,7 +326,7 @@ export class LocalFileStorage {
       } catch {
         // Metadata file doesn't exist, ignore
       }
-      
+
       return {
         size: stats.size,
         lastModified: stats.mtime,
@@ -286,21 +334,27 @@ export class LocalFileStorage {
         metadata: metadata?.metadata,
       };
     } catch (error) {
-      logger.error({
-        filename,
-        path: filePath,
-        error: error instanceof Error ? error.message : String(error),
-      }, 'Failed to get file info');
+      logger.error(
+        {
+          filename,
+          path: filePath,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Failed to get file info'
+      );
       return null;
     }
   }
 
-  async listFiles(isPublic: boolean = false, pattern?: string): Promise<string[]> {
+  async listFiles(
+    isPublic: boolean = false,
+    pattern?: string
+  ): Promise<string[]> {
     const storageDir = isPublic ? this.publicDir : this.privateDir;
-    
+
     try {
       const files = await fs.readdir(storageDir);
-      
+
       // Filter out metadata files and apply pattern if provided
       const filteredFiles = files.filter(file => {
         if (file.endsWith('.meta.json')) return false;
@@ -310,19 +364,25 @@ export class LocalFileStorage {
         }
         return true;
       });
-      
+
       return filteredFiles;
     } catch (error) {
-      logger.error({
-        storageDir,
-        error: error instanceof Error ? error.message : String(error),
-      }, 'Failed to list files');
+      logger.error(
+        {
+          storageDir,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Failed to list files'
+      );
       return [];
     }
   }
 
   // Health check
-  async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; error?: string }> {
+  async healthCheck(): Promise<{
+    status: 'healthy' | 'unhealthy';
+    error?: string;
+  }> {
     try {
       await this.ensureDirectories();
       return { status: 'healthy' };

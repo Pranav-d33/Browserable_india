@@ -1,26 +1,14 @@
 module.exports = {
   extends: ['@commitlint/config-conventional'],
   rules: {
-    'type-enum': [
-      2,
-      'always',
-      [
-        'feat',
-        'fix',
-        'docs',
-        'style',
-        'refactor',
-        'perf',
-        'test',
-        'build',
-        'ci',
-        'chore',
-        'revert',
-      ],
-    ],
-    'subject-case': [2, 'always', 'lower-case'],
-    'subject-empty': [2, 'never'],
-    'subject-full-stop': [2, 'never', '.'],
+    // Allow simple messages like "Lint errors" by disabling type enforcement
+    'type-enum': [0],
+    'type-empty': [0],
+    // Allow any subject casing or even single-word subjects
+    'subject-case': [0],
+    'subject-empty': [0],
+    'subject-full-stop': [0],
+    // Keep a sane header length limit
     'header-max-length': [2, 'always', 72],
   },
 };

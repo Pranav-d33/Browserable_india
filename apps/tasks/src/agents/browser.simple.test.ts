@@ -32,9 +32,16 @@ describe('BrowserAgent - Simple Tests', () => {
 
   it('should support all browser actions', () => {
     const actions = ['goto', 'click', 'type', 'wait', 'screenshot', 'extract'];
-    
+
     actions.forEach(action => {
-      expect(['goto', 'click', 'type', 'wait', 'screenshot', 'extract']).toContain(action);
+      expect([
+        'goto',
+        'click',
+        'type',
+        'wait',
+        'screenshot',
+        'extract',
+      ]).toContain(action);
     });
   });
 
@@ -42,7 +49,7 @@ describe('BrowserAgent - Simple Tests', () => {
     // Test that environment variables are properly read
     const maxSteps = process.env.BROWSER_MAX_STEPS || '30';
     const maxDuration = process.env.BROWSER_MAX_DURATION_MS || '90000';
-    
+
     expect(parseInt(maxSteps, 10)).toBeGreaterThan(0);
     expect(parseInt(maxDuration, 10)).toBeGreaterThan(0);
   });

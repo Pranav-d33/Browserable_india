@@ -12,14 +12,17 @@ async function example() {
 
   try {
     console.log('🚀 Launching browser session...');
-    
+
     // Launch a new browser session
     const { sessionId } = await client.launchSession();
     console.log(`✅ Session launched: ${sessionId}`);
 
     // Navigate to a website
     console.log('🌐 Navigating to example.com...');
-    const navigateAction = await client.navigate(sessionId, 'https://example.com');
+    const navigateAction = await client.navigate(
+      sessionId,
+      'https://example.com'
+    );
     console.log(`✅ Navigation action created: ${navigateAction.id}`);
 
     // Wait a moment for the page to load
@@ -27,25 +30,31 @@ async function example() {
 
     // Take a screenshot
     console.log('📸 Taking screenshot...');
-    const screenshotAction = await client.screenshot(sessionId, 'https://example.com');
+    const screenshotAction = await client.screenshot(
+      sessionId,
+      'https://example.com'
+    );
     console.log(`✅ Screenshot action created: ${screenshotAction.id}`);
 
     // Extract the page title
     console.log('📄 Extracting page title...');
-    const extractAction = await client.extract(sessionId, 'https://example.com');
+    const extractAction = await client.extract(
+      sessionId,
+      'https://example.com'
+    );
     console.log(`✅ Extract action created: ${extractAction.id}`);
 
     // Wait for actions to complete and check results
     console.log('⏳ Waiting for actions to complete...');
-    
+
     // Check navigation result
     const navigateResult = await client.getAction(navigateAction.id);
     console.log('Navigation status:', navigateResult.status);
-    
+
     // Check screenshot result
     const screenshotResult = await client.getAction(screenshotAction.id);
     console.log('Screenshot status:', screenshotResult.status);
-    
+
     // Check extract result
     const extractResult = await client.getAction(extractAction.id);
     console.log('Extract status:', extractResult.status);
@@ -62,7 +71,6 @@ async function example() {
     console.log('🔒 Closing browser session...');
     await client.closeSession(sessionId);
     console.log('✅ Session closed successfully');
-
   } catch (error) {
     console.error('❌ Error:', error.message);
   }

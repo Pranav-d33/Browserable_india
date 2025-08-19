@@ -14,37 +14,43 @@ export interface StorageService {
     options?: {
       isPublic?: boolean;
       contentType?: string;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, string>;
     }
   ): Promise<{ url: string; path: string; filename: string }>;
-  
+
   saveFileFromStream(
     filename: string,
     stream: NodeJS.ReadableStream,
     options?: {
       isPublic?: boolean;
       contentType?: string;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, string>;
     }
   ): Promise<{ url: string; path: string; filename: string }>;
-  
+
   getFile(filename: string, isPublic?: boolean): Promise<Buffer>;
-  
-  getFileStream(filename: string, isPublic?: boolean): Promise<NodeJS.ReadableStream>;
-  
+
+  getFileStream(
+    filename: string,
+    isPublic?: boolean
+  ): Promise<NodeJS.ReadableStream>;
+
   deleteFile(filename: string, isPublic?: boolean): Promise<void>;
-  
+
   fileExists(filename: string, isPublic?: boolean): Promise<boolean>;
-  
-  getFileInfo(filename: string, isPublic?: boolean): Promise<{
+
+  getFileInfo(
+    filename: string,
+    isPublic?: boolean
+  ): Promise<{
     size: number;
     lastModified: Date;
     contentType?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, string>;
   } | null>;
-  
+
   listFiles(isPublic?: boolean, pattern?: string): Promise<string[]>;
-  
+
   healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; error?: string }>;
 }
 
@@ -52,8 +58,15 @@ export interface StorageService {
 // S3 Storage Service Adapter
 // =============================================================================
 
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+  ListObjectsV2Command,
+} from '@aws-sdk/client-s3';
+import type { Readable } from 'stream';
 
 class S3StorageService implements StorageService {
   private s3Client: S3Client;
@@ -71,10 +84,14 @@ class S3StorageService implements StorageService {
   private generateUniqueFilename(originalName: string): string {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 15);
-    const ext = originalName.includes('.') ? originalName.substring(originalName.lastIndexOf('.')) : '';
-    const name = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
+    const ext = originalName.includes('.')
+      ? originalName.substring(originalName.lastIndexOf('.'))
+      : '';
+    const name = originalName.includes('.')
+      ? originalName.substring(0, originalName.lastIndexOf('.'))
+      : originalName;
     const sanitizedName = this.sanitizeFilename(name);
-    
+
     return `${sanitizedName}_${timestamp}_${random}${ext}`;
   }
 
@@ -84,14 +101,14 @@ class S3StorageService implements StorageService {
     options: {
       isPublic?: boolean;
       contentType?: string;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, string>;
     } = {}
   ): Promise<{ url: string; path: string; filename: string }> {
     const { contentType, metadata } = options;
-    
+
     const sanitizedFilename = this.sanitizeFilename(filename);
     const uniqueFilename = this.generateUniqueFilename(sanitizedFilename);
-    
+
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: uniqueFilename,
@@ -104,12 +121,15 @@ class S3StorageService implements StorageService {
 
     const url = `${env.S3_ENDPOINT}/${this.bucketName}/${uniqueFilename}`;
 
-    logger.debug({
-      originalName: filename,
-      filename: uniqueFilename,
-      url,
-      size: Buffer.isBuffer(data) ? data.length : data.length,
-    }, 'File saved to S3 successfully');
+    logger.debug(
+      {
+        originalName: filename,
+        filename: uniqueFilename,
+        url,
+        size: Buffer.isBuffer(data) ? data.length : data.length,
+      },
+      'File saved to S3 successfully'
+    );
 
     return {
       url,
@@ -124,14 +144,14 @@ class S3StorageService implements StorageService {
     options: {
       isPublic?: boolean;
       contentType?: string;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, string>;
     } = {}
   ): Promise<{ url: string; path: string; filename: string }> {
     const { contentType, metadata } = options;
-    
+
     const sanitizedFilename = this.sanitizeFilename(filename);
     const uniqueFilename = this.generateUniqueFilename(sanitizedFilename);
-    
+
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: uniqueFilename,
@@ -144,11 +164,14 @@ class S3StorageService implements StorageService {
 
     const url = `${env.S3_ENDPOINT}/${this.bucketName}/${uniqueFilename}`;
 
-    logger.debug({
-      originalName: filename,
-      filename: uniqueFilename,
-      url,
-    }, 'File saved to S3 from stream successfully');
+    logger.debug(
+      {
+        originalName: filename,
+        filename: uniqueFilename,
+        url,
+      },
+      'File saved to S3 from stream successfully'
+    );
 
     return {
       url,
@@ -157,34 +180,37 @@ class S3StorageService implements StorageService {
     };
   }
 
-  async getFile(filename: string, isPublic: boolean = false): Promise<Buffer> {
+  async getFile(filename: string, _isPublic: boolean = false): Promise<Buffer> {
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: this.sanitizeFilename(filename),
     });
 
     const response = await this.s3Client.send(command);
-    
+
     if (!response.Body) {
       throw new Error('File not found or empty');
     }
 
     const chunks: Buffer[] = [];
-    for await (const chunk of response.Body as any) {
+    for await (const chunk of response.Body as Readable) {
       chunks.push(Buffer.from(chunk));
     }
 
     return Buffer.concat(chunks);
   }
 
-  async getFileStream(filename: string, isPublic: boolean = false): Promise<NodeJS.ReadableStream> {
+  async getFileStream(
+    filename: string,
+    _isPublic: boolean = false
+  ): Promise<NodeJS.ReadableStream> {
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: this.sanitizeFilename(filename),
     });
 
     const response = await this.s3Client.send(command);
-    
+
     if (!response.Body) {
       throw new Error('File not found or empty');
     }
@@ -192,18 +218,24 @@ class S3StorageService implements StorageService {
     return response.Body as NodeJS.ReadableStream;
   }
 
-  async deleteFile(filename: string, isPublic: boolean = false): Promise<void> {
+  async deleteFile(
+    filename: string,
+    _isPublic: boolean = false
+  ): Promise<void> {
     const command = new DeleteObjectCommand({
       Bucket: this.bucketName,
       Key: this.sanitizeFilename(filename),
     });
 
     await this.s3Client.send(command);
-    
+
     logger.debug({ filename }, 'File deleted from S3 successfully');
   }
 
-  async fileExists(filename: string, isPublic: boolean = false): Promise<boolean> {
+  async fileExists(
+    filename: string,
+    _isPublic: boolean = false
+  ): Promise<boolean> {
     try {
       const command = new HeadObjectCommand({
         Bucket: this.bucketName,
@@ -217,11 +249,14 @@ class S3StorageService implements StorageService {
     }
   }
 
-  async getFileInfo(filename: string, isPublic: boolean = false): Promise<{
+  async getFileInfo(
+    filename: string,
+    _isPublic: boolean = false
+  ): Promise<{
     size: number;
     lastModified: Date;
     contentType?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, string>;
   } | null> {
     try {
       const command = new HeadObjectCommand({
@@ -230,7 +265,7 @@ class S3StorageService implements StorageService {
       });
 
       const response = await this.s3Client.send(command);
-      
+
       return {
         size: response.ContentLength || 0,
         lastModified: response.LastModified || new Date(),
@@ -238,37 +273,48 @@ class S3StorageService implements StorageService {
         metadata: response.Metadata,
       };
     } catch (error) {
-      logger.error({
-        filename,
-        error: error instanceof Error ? error.message : String(error),
-      }, 'Failed to get file info from S3');
+      logger.error(
+        {
+          filename,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Failed to get file info from S3'
+      );
       return null;
     }
   }
 
-  async listFiles(isPublic: boolean = false, pattern?: string): Promise<string[]> {
+  async listFiles(
+    _isPublic: boolean = false,
+    pattern?: string
+  ): Promise<string[]> {
     const command = new ListObjectsV2Command({
       Bucket: this.bucketName,
       MaxKeys: 1000,
     });
 
     const response = await this.s3Client.send(command);
-    
+
     if (!response.Contents) {
       return [];
     }
 
-    let files = response.Contents.map(obj => obj.Key || '').filter(key => key.length > 0);
-    
+    let files = response.Contents.map(obj => obj.Key || '').filter(
+      key => key.length > 0
+    );
+
     if (pattern) {
       const regex = new RegExp(pattern);
       files = files.filter(file => regex.test(file));
     }
-    
+
     return files;
   }
 
-  async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; error?: string }> {
+  async healthCheck(): Promise<{
+    status: 'healthy' | 'unhealthy';
+    error?: string;
+  }> {
     try {
       await ensureBucket(this.bucketName);
       return { status: 'healthy' };
@@ -298,24 +344,24 @@ class StorageServiceFactory {
         this.instance = new S3StorageService();
       }
     }
-    
+
     return this.instance!;
   }
 
   static async initialize(): Promise<void> {
     const service = this.getInstance();
-    
+
     // Test the service
     const health = await service.healthCheck();
     if (health.status === 'unhealthy') {
       throw new Error(`Storage service health check failed: ${health.error}`);
     }
-    
+
     // Initialize buckets if using S3
     if (!env.USE_LOCAL_STORAGE) {
       await initializeBuckets();
     }
-    
+
     logger.info('Storage service initialized successfully');
   }
 }

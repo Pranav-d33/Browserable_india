@@ -1,9 +1,9 @@
 import { Queue, Worker, QueueScheduler } from 'bullmq';
 import { env, logger } from '@bharat-agents/shared';
 import { getRedisClient } from '../services/redis.js';
-import { recordQueueJob, recordAgentRun, recordAgentNode } from '../services/metrics.js';
+import { recordQueueJob } from '../services/metrics.js';
 import { jarvis } from '../orchestrator/jarvis.js';
-import { AgentKind, AgentRunStatus, AgentNodeStatus } from '@bharat-agents/shared';
+import { AgentKind } from '@bharat-agents/shared';
 
 // =============================================================================
 // Redis Connection Configuration
@@ -60,25 +60,40 @@ export const browserScheduler = new QueueScheduler('browser-queue', {
 // =============================================================================
 
 // Agent worker - handles GEN, ECHO, and other non-browser agents
-export const agentWorker = new Worker(
+type AgentJobData = {
+  runId: string;
+  nodeId: string;
+  agentKind: AgentKind;
+  userId: string;
+};
+
+export const agentWorker = new Worker<AgentJobData>(
   'agent-queue',
-  async (job) => {
+  async job => {
     const startTime = Date.now();
-    
-    logger.info({
-      jobId: job.id,
-      data: job.data,
-    }, 'Agent worker processing job');
+
+    logger.info(
+      {
+        jobId: job.id,
+        data: job.data,
+      },
+      'Agent worker processing job'
+    );
 
     try {
-      const { runId, nodeId, agentKind, input, userId } = job.data;
-      
+      const { runId, nodeId, agentKind, userId } = job.data;
+
       // Execute the agent using the orchestrator
-      const result = await jarvis.executeRunFromQueue(runId, nodeId, agentKind, userId);
-      
+      const result = await jarvis.executeRunFromQueue(
+        runId,
+        nodeId,
+        agentKind,
+        userId
+      );
+
       // Record successful job
       recordQueueJob('agent', 'completed', Date.now() - startTime);
-      
+
       return result;
     } catch (error) {
       // Record failed job
@@ -93,25 +108,35 @@ export const agentWorker = new Worker(
 );
 
 // Browser worker - handles browser automation
-export const browserWorker = new Worker(
+type BrowserJobData = AgentJobData;
+
+export const browserWorker = new Worker<BrowserJobData>(
   'browser-queue',
-  async (job) => {
+  async job => {
     const startTime = Date.now();
-    
-    logger.info({
-      jobId: job.id,
-      data: job.data,
-    }, 'Browser worker processing job');
+
+    logger.info(
+      {
+        jobId: job.id,
+        data: job.data,
+      },
+      'Browser worker processing job'
+    );
 
     try {
-      const { runId, nodeId, agentKind, input, userId } = job.data;
-      
+      const { runId, nodeId, agentKind, userId } = job.data;
+
       // Execute the browser agent using the orchestrator
-      const result = await jarvis.executeRunFromQueue(runId, nodeId, agentKind, userId);
-      
+      const result = await jarvis.executeRunFromQueue(
+        runId,
+        nodeId,
+        agentKind,
+        userId
+      );
+
       // Record successful job
       recordQueueJob('browser', 'completed', Date.now() - startTime);
-      
+
       return result;
     } catch (error) {
       // Record failed job
@@ -129,11 +154,17 @@ export const browserWorker = new Worker(
 // Queue Management Functions
 // =============================================================================
 
-export const addAgentJob = async (data: any, options?: any) => {
+export const addAgentJob = async (
+  data: AgentJobData,
+  options?: Parameters<typeof agentQueue.add>[2]
+) => {
   return agentQueue.add('process-agent', data, options);
 };
 
-export const addBrowserJob = async (data: any, options?: any) => {
+export const addBrowserJob = async (
+  data: BrowserJobData,
+  options?: Parameters<typeof browserQueue.add>[2]
+) => {
   return browserQueue.add('process-browser', data, options);
 };
 
@@ -155,7 +186,7 @@ export const getQueueStats = async () => {
 
 export const closeQueues = async () => {
   logger.info('Closing queues...');
-  
+
   await Promise.all([
     agentQueue.close(),
     browserQueue.close(),
@@ -164,7 +195,7 @@ export const closeQueues = async () => {
     agentWorker.close(),
     browserWorker.close(),
   ]);
-  
+
   logger.info('Queues closed');
 };
 

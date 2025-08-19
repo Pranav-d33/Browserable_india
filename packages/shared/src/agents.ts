@@ -443,7 +443,7 @@ export function deepCloneAgent<T>(obj: T): T {
   if (typeof obj === 'object') {
     const cloned = {} as T;
     for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
+      if (Object.hasOwn(obj as object, key)) {
         cloned[key] = deepCloneAgent(obj[key]);
       }
     }

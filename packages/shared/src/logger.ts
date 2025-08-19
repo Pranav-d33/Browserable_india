@@ -36,7 +36,7 @@ const baseConfig = {
     remove: true,
   },
   serializers: {
-    req: (req: any) => {
+    req: (req: unknown) => {
       const serialized = pino.stdSerializers.req(req);
       // Additional redaction for request headers
       if (serialized.headers) {

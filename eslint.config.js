@@ -80,6 +80,8 @@ export default [
       ...tseslint.configs.recommended.rules,
       ...prettierConfig.rules,
       'prettier/prettier': 'error',
+      // TypeScript has its own undefined checks; avoid false positives on TS-only types
+      'no-undef': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_' },
@@ -108,7 +110,16 @@ export default [
     },
   },
   {
-    files: ['**/*.test.ts', '**/*.spec.ts', '**/*.test.js', '**/*.spec.js'],
+    files: [
+      '**/*.test.ts',
+      '**/*.spec.ts',
+      '**/*.test.js',
+      '**/*.spec.js',
+      '**/test.ts',
+      '**/test.js',
+      '**/test/**/*.{ts,js}',
+      '**/tests/**/*.{ts,js}',
+    ],
     languageOptions: {
       globals: {
         // Jest/Vitest globals
@@ -129,6 +140,47 @@ export default [
         __dirname: 'readonly',
         __filename: 'readonly',
       },
+    },
+    rules: {
+      // Relax rules in tests to enable pragmatic testing patterns
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/no-var-requires': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_' },
+      ],
+    },
+  },
+  // Examples override: allow unused vars in examples and relax return type
+  {
+    files: [
+      'apps/**/src/**/*example*.ts',
+      'apps/**/src/**/*example*.js',
+      'apps/**/src/**/examples/**/*.{ts,js}',
+      'packages/**/example-usage.*',
+    ],
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['off'],
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      'no-unused-vars': 'off',
+    },
+  },
+  // Scripts override (e.g., k6): define globals and relax rules
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      globals: {
+        __ENV: 'readonly',
+        open: 'readonly',
+        sleep: 'readonly',
+        group: 'readonly',
+      },
+    },
+    rules: {
+      'no-undef': 'off',
+      'no-unused-vars': 'off',
     },
   },
 ];

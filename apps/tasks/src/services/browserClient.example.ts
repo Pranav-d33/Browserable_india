@@ -4,7 +4,7 @@ import { createBrowserClient, ConsoleAuditLogger } from './browserClient';
 // Browser Client Example Usage
 // =============================================================================
 
-async function browserClientExample() {
+async function browserClientExample(): Promise<void> {
   console.log('=== Browser Client Example ===\n');
 
   // Create browser client with audit logging
@@ -30,13 +30,18 @@ async function browserClientExample() {
 
     // Example 2: Navigate to a website
     console.log('2. Navigating to example.com...');
-    const navigateAction = await browserClient.goto(sessionId, 'https://example.com');
+    const navigateAction = await browserClient.goto(
+      sessionId,
+      'https://example.com'
+    );
     console.log(`Navigation action ID: ${navigateAction.id}`);
     console.log(`Status: ${navigateAction.status}\n`);
 
     // Example 3: Wait for action completion
     console.log('3. Waiting for navigation to complete...');
-    const completedAction = await browserClient.waitForAction(navigateAction.id);
+    const completedAction = await browserClient.waitForAction(
+      navigateAction.id
+    );
     console.log(`Action completed: ${completedAction.status}`);
     if (completedAction.result?.success) {
       console.log('Navigation successful!\n');
@@ -44,13 +49,20 @@ async function browserClientExample() {
 
     // Example 4: Take a screenshot
     console.log('4. Taking screenshot...');
-    const screenshotAction = await browserClient.screenshot(sessionId, 'https://example.com');
+    const screenshotAction = await browserClient.screenshot(
+      sessionId,
+      'https://example.com'
+    );
     await browserClient.waitForAction(screenshotAction.id);
     console.log('Screenshot taken successfully!\n');
 
     // Example 5: Extract content
     console.log('5. Extracting page content...');
-    const extractAction = await browserClient.extract(sessionId, 'https://example.com', 'h1');
+    const extractAction = await browserClient.extract(
+      sessionId,
+      'https://example.com',
+      'h1'
+    );
     const extractResult = await browserClient.waitForAction(extractAction.id);
     if (extractResult.result?.success) {
       console.log('Extracted content:', extractResult.result.data);
@@ -72,10 +84,11 @@ async function browserClientExample() {
     const sessions = await browserClient.listSessions();
     console.log(`Active sessions: ${sessions.length}`);
     sessions.forEach(session => {
-      console.log(`  - ${session.sessionId}: ${session.isActive ? 'Active' : 'Inactive'}`);
+      console.log(
+        `  - ${session.sessionId}: ${session.isActive ? 'Active' : 'Inactive'}`
+      );
     });
     console.log('');
-
   } catch (error) {
     console.error('Error in browser client example:', error);
   } finally {
@@ -98,7 +111,7 @@ async function browserClientExample() {
 // Advanced Example: Web Scraping Workflow
 // =============================================================================
 
-async function webScrapingExample() {
+async function webScrapingExample(): Promise<void> {
   console.log('=== Web Scraping Example ===\n');
 
   const browserClient = createBrowserClient('http://localhost:3002');
@@ -110,42 +123,68 @@ async function webScrapingExample() {
     console.log(`Session created: ${sessionId}`);
 
     // Navigate to a search engine
-    const navigateAction = await browserClient.goto(sessionId, 'https://www.google.com');
+    const navigateAction = await browserClient.goto(
+      sessionId,
+      'https://www.google.com'
+    );
     await browserClient.waitForAction(navigateAction.id);
     console.log('Navigated to Google');
 
     // Wait for search box to appear
-    const waitAction = await browserClient.waitFor(sessionId, 'https://www.google.com', 'input[name="q"]');
+    const waitAction = await browserClient.waitFor(
+      sessionId,
+      'https://www.google.com',
+      'input[name="q"]'
+    );
     await browserClient.waitForAction(waitAction.id);
     console.log('Search box is ready');
 
     // Type search query
-    const typeAction = await browserClient.type(sessionId, 'https://www.google.com', 'input[name="q"]', 'web scraping');
+    const typeAction = await browserClient.type(
+      sessionId,
+      'https://www.google.com',
+      'input[name="q"]',
+      'web scraping'
+    );
     await browserClient.waitForAction(typeAction.id);
     console.log('Typed search query');
 
     // Click search button
-    const clickAction = await browserClient.click(sessionId, 'https://www.google.com', 'input[name="btnK"]');
+    const clickAction = await browserClient.click(
+      sessionId,
+      'https://www.google.com',
+      'input[name="btnK"]'
+    );
     await browserClient.waitForAction(clickAction.id);
     console.log('Clicked search button');
 
     // Wait for results
-    const waitResultsAction = await browserClient.waitFor(sessionId, 'https://www.google.com', '#search');
+    const waitResultsAction = await browserClient.waitFor(
+      sessionId,
+      'https://www.google.com',
+      '#search'
+    );
     await browserClient.waitForAction(waitResultsAction.id);
     console.log('Search results loaded');
 
     // Extract search results
-    const extractAction = await browserClient.extract(sessionId, 'https://www.google.com', '.g');
+    const extractAction = await browserClient.extract(
+      sessionId,
+      'https://www.google.com',
+      '.g'
+    );
     const extractResult = await browserClient.waitForAction(extractAction.id);
     if (extractResult.result?.success) {
       console.log('Search results extracted');
     }
 
     // Take screenshot of results
-    const screenshotAction = await browserClient.screenshot(sessionId, 'https://www.google.com');
+    const screenshotAction = await browserClient.screenshot(
+      sessionId,
+      'https://www.google.com'
+    );
     await browserClient.waitForAction(screenshotAction.id);
     console.log('Screenshot taken');
-
   } catch (error) {
     console.error('Error in web scraping example:', error);
   } finally {
@@ -162,7 +201,7 @@ async function webScrapingExample() {
 // Error Handling Example
 // =============================================================================
 
-async function errorHandlingExample() {
+async function errorHandlingExample(): Promise<void> {
   console.log('=== Error Handling Example ===\n');
 
   const browserClient = createBrowserClient('http://localhost:3002');
@@ -171,23 +210,32 @@ async function errorHandlingExample() {
     // Try to navigate to an invalid URL
     console.log('1. Testing invalid URL...');
     const sessionId = await browserClient.createSession();
-    
+
     try {
       await browserClient.goto(sessionId, 'not-a-valid-url');
     } catch (error) {
-      console.log('Expected error caught:', error instanceof Error ? error.message : error);
+      console.log(
+        'Expected error caught:',
+        error instanceof Error ? error.message : error
+      );
     }
 
     // Try to click on non-existent element
     console.log('\n2. Testing non-existent element...');
     try {
-      await browserClient.click(sessionId, 'https://example.com', '#non-existent-element');
+      await browserClient.click(
+        sessionId,
+        'https://example.com',
+        '#non-existent-element'
+      );
     } catch (error) {
-      console.log('Expected error caught:', error instanceof Error ? error.message : error);
+      console.log(
+        'Expected error caught:',
+        error instanceof Error ? error.message : error
+      );
     }
 
     await browserClient.closeSession(sessionId);
-
   } catch (error) {
     console.error('Unexpected error:', error);
   }
@@ -199,13 +247,13 @@ async function errorHandlingExample() {
 // Configuration Example
 // =============================================================================
 
-async function configurationExample() {
+async function configurationExample(): Promise<void> {
   console.log('=== Configuration Example ===\n');
 
   // Create client with custom configuration
   const browserClient = createBrowserClient('http://localhost:3002', {
     timeout: 60000, // 60 seconds
-    retries: 5,     // 5 retries
+    retries: 5, // 5 retries
     retryDelay: 2000, // 2 seconds between retries
     enableAuditLog: true,
   });
@@ -222,19 +270,18 @@ async function configurationExample() {
 // Run Examples
 // =============================================================================
 
-async function runAllExamples() {
+async function runAllExamples(): Promise<void> {
   try {
     await browserClientExample();
     console.log('\n' + '='.repeat(50) + '\n');
-    
+
     await webScrapingExample();
     console.log('\n' + '='.repeat(50) + '\n');
-    
+
     await errorHandlingExample();
     console.log('\n' + '='.repeat(50) + '\n');
-    
+
     await configurationExample();
-    
   } catch (error) {
     console.error('Error running examples:', error);
   }

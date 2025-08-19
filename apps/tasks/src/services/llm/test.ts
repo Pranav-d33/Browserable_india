@@ -26,7 +26,7 @@ describe('LLM Provider Adapters', () => {
   describe('MockLLM', () => {
     it('should complete requests with mock responses', async () => {
       const mockLLM = new MockLLM();
-      
+
       const response = await mockLLM.complete({
         model: 'test-model',
         prompt: 'Hello, world!',
@@ -41,7 +41,7 @@ describe('LLM Provider Adapters', () => {
 
     it('should handle JSON mode', async () => {
       const mockLLM = new MockLLM();
-      
+
       const response = await mockLLM.complete({
         model: 'test-model',
         prompt: 'Generate a JSON response',
@@ -55,14 +55,16 @@ describe('LLM Provider Adapters', () => {
 
     it('should handle system prompts', async () => {
       const mockLLM = new MockLLM();
-      
+
       const response = await mockLLM.complete({
         model: 'test-model',
         system: 'You are a helpful assistant.',
         prompt: 'What is 2+2?',
       });
 
-      expect(response.text).toContain('System context: You are a helpful assistant.');
+      expect(response.text).toContain(
+        'System context: You are a helpful assistant.'
+      );
     });
   });
 
@@ -75,20 +77,20 @@ describe('LLM Provider Adapters', () => {
 
     it('should register OpenAI provider when API key is available', () => {
       process.env.OPENAI_API_KEY = 'test-key';
-      
+
       // Create a new factory instance to test initialization
       const { llmFactory: newFactory } = require('./index');
       const providers = newFactory.listProviders();
-      
+
       expect(providers).toContain('openai');
     });
 
     it('should set default provider from environment', () => {
       process.env.LLM_PROVIDER = 'mock';
       process.env.LLM_MODEL = 'gpt-4';
-      
+
       const { llmFactory: newFactory } = require('./index');
-      
+
       expect(newFactory.getDefaultProvider()).toBe('mock');
       expect(newFactory.getDefaultModel()).toBe('gpt-4');
     });
@@ -120,7 +122,7 @@ describe('LLM Provider Adapters', () => {
           prompt: 'Test prompt',
           provider: 'non-existent',
         })
-      ).rejects.toThrow('Provider \'non-existent\' not found');
+      ).rejects.toThrow("Provider 'non-existent' not found");
     });
 
     it('should throw error for missing prompt', async () => {
@@ -133,7 +135,7 @@ describe('LLM Provider Adapters', () => {
 
     it('should perform health check', async () => {
       const health = await llmFactory.healthCheck();
-      
+
       expect(health).toHaveProperty('mock');
       expect(health.mock.status).toBe('healthy');
     });
@@ -158,7 +160,7 @@ describe('LLM Provider Adapters', () => {
     it('should throw error when setting non-existent provider as default', () => {
       expect(() => {
         llmFactory.setDefaultProvider('non-existent');
-      }).toThrow('Provider \'non-existent\' not found');
+      }).toThrow("Provider 'non-existent' not found");
     });
   });
 
@@ -181,7 +183,7 @@ describe('LLM Provider Adapters', () => {
 
     it('should complete requests with OpenAI', async () => {
       const openaiLLM = new OpenAILLM('test-api-key');
-      
+
       const response = await openaiLLM.complete({
         model: 'gpt-3.5-turbo',
         prompt: 'Hello, OpenAI!',
@@ -194,7 +196,7 @@ describe('LLM Provider Adapters', () => {
 
     it('should handle JSON mode', async () => {
       const openaiLLM = new OpenAILLM('test-api-key');
-      
+
       await openaiLLM.complete({
         model: 'gpt-3.5-turbo',
         prompt: 'Generate JSON',
@@ -207,7 +209,7 @@ describe('LLM Provider Adapters', () => {
 
     it('should handle tools', async () => {
       const openaiLLM = new OpenAILLM('test-api-key');
-      
+
       const tools = [
         {
           type: 'function' as const,
@@ -231,7 +233,7 @@ describe('LLM Provider Adapters', () => {
 
     it('should handle circuit breaker state', () => {
       const openaiLLM = new OpenAILLM('test-api-key');
-      
+
       const state = openaiLLM.getCircuitBreakerState();
       expect(state.state).toBe('closed');
       expect(state.failures).toBe(0);
@@ -239,11 +241,11 @@ describe('LLM Provider Adapters', () => {
 
     it('should allow configuration updates', () => {
       const openaiLLM = new OpenAILLM('test-api-key');
-      
+
       openaiLLM.setRetryConfig({ maxRetries: 5 });
       openaiLLM.setTimeoutConfig({ requestTimeout: 60000 });
       openaiLLM.setCircuitBreakerConfig({ failureThreshold: 10 });
-      
+
       // Configuration should be updated (we can't easily test the internal state,
       // but we can verify the methods don't throw)
       expect(openaiLLM).toBeDefined();

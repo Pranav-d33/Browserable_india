@@ -32,14 +32,16 @@ export interface LLMResponse {
 export class MockLLM implements LLMProvider {
   name = 'mock';
 
-  async generate(prompt: string, options?: LLMOptions): Promise<LLMResponse> {
-    logger.warn('Using deprecated MockLLM.generate() - use new LLM factory instead');
-    
+  async generate(prompt: string, _options?: LLMOptions): Promise<LLMResponse> {
+    logger.warn(
+      'Using deprecated MockLLM.generate() - use new LLM factory instead'
+    );
+
     const response = await llmFactory.complete({
       prompt,
-      model: options?.model || 'mock-model',
-      temperature: options?.temperature,
-      maxTokens: options?.maxTokens,
+      model: _options?.model || 'mock-model',
+      temperature: _options?.temperature,
+      maxTokens: _options?.maxTokens,
     });
 
     return {
@@ -51,7 +53,7 @@ export class MockLLM implements LLMProvider {
       },
       metadata: {
         provider: this.name,
-        model: options?.model || 'mock-model',
+        model: _options?.model || 'mock-model',
         timestamp: new Date().toISOString(),
       },
     };
@@ -66,8 +68,10 @@ export class LLMService {
     logger.warn('Using deprecated LLMService - use new LLM factory instead');
   }
 
-  registerProvider(provider: LLMProvider): void {
-    logger.warn('registerProvider() is deprecated - providers are auto-registered in new factory');
+  registerProvider(_provider: LLMProvider): void {
+    logger.warn(
+      'registerProvider() is deprecated - providers are auto-registered in new factory'
+    );
   }
 
   setDefaultProvider(name: string): void {
@@ -79,8 +83,10 @@ export class LLMService {
     prompt: string,
     options?: LLMOptions & { provider?: string }
   ): Promise<LLMResponse> {
-    logger.warn('Using deprecated LLMService.generate() - use new LLM factory instead');
-    
+    logger.warn(
+      'Using deprecated LLMService.generate() - use new LLM factory instead'
+    );
+
     const response = await llmFactory.complete({
       prompt,
       provider: options?.provider || this.defaultProvider,
@@ -122,3 +128,6 @@ export const llmService = new LLMService();
 
 // Export new factory for migration
 export { llmFactory, getLLM } from './llm/index';
+
+// Silence unused variable in legacy mock provider function signature if present
+// by prefixing with underscore where appropriate in this file’s callbacks/types.

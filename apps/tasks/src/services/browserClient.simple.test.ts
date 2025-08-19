@@ -87,7 +87,11 @@ describe('BrowserClient - Simple Tests', () => {
         json: async () => mockResponse,
       });
 
-      const action = await client.click('session-123', 'https://example.com', '#button');
+      const action = await client.click(
+        'session-123',
+        'https://example.com',
+        '#button'
+      );
       expect(action.type).toBe('click');
       expect(action.selector).toBe('#button');
     });
@@ -112,7 +116,12 @@ describe('BrowserClient - Simple Tests', () => {
         json: async () => mockResponse,
       });
 
-      const action = await client.type('session-123', 'https://example.com', '#input', 'hello');
+      const action = await client.type(
+        'session-123',
+        'https://example.com',
+        '#input',
+        'hello'
+      );
       expect(action.type).toBe('type');
       expect(action.data).toEqual({ text: 'hello' });
     });
@@ -136,7 +145,10 @@ describe('BrowserClient - Simple Tests', () => {
         json: async () => mockResponse,
       });
 
-      const action = await client.screenshot('session-123', 'https://example.com');
+      const action = await client.screenshot(
+        'session-123',
+        'https://example.com'
+      );
       expect(action.type).toBe('screenshot');
       expect(action.screenshot).toBe(true);
     });
@@ -160,7 +172,11 @@ describe('BrowserClient - Simple Tests', () => {
         json: async () => mockResponse,
       });
 
-      const action = await client.extract('session-123', 'https://example.com', '.content');
+      const action = await client.extract(
+        'session-123',
+        'https://example.com',
+        '.content'
+      );
       expect(action.type).toBe('extract');
       expect(action.selector).toBe('.content');
     });
@@ -185,7 +201,12 @@ describe('BrowserClient - Simple Tests', () => {
         json: async () => mockResponse,
       });
 
-      const action = await client.waitFor('session-123', 'https://example.com', '#loading', 5000);
+      const action = await client.waitFor(
+        'session-123',
+        'https://example.com',
+        '#loading',
+        5000
+      );
       expect(action.type).toBe('wait');
       expect(action.data).toEqual({ timeout: 5000 });
     });

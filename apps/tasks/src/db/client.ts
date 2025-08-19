@@ -25,37 +25,49 @@ const prisma = new PrismaClient({
 
 // Log queries in development
 if (process.env.NODE_ENV === 'development') {
-  prisma.$on('query', (e) => {
-    logger.debug({
-      query: e.query,
-      params: e.params,
-      duration: `${e.duration}ms`,
-    }, 'Database query');
+  prisma.$on('query', e => {
+    logger.debug(
+      {
+        query: e.query,
+        params: e.params,
+        duration: `${e.duration}ms`,
+      },
+      'Database query'
+    );
   });
 }
 
 // Log errors
-prisma.$on('error', (e) => {
-  logger.error({
-    error: e.message,
-    target: e.target,
-  }, 'Database error');
+prisma.$on('error', e => {
+  logger.error(
+    {
+      error: e.message,
+      target: e.target,
+    },
+    'Database error'
+  );
 });
 
 // Log info
-prisma.$on('info', (e) => {
-  logger.info({
-    message: e.message,
-    target: e.target,
-  }, 'Database info');
+prisma.$on('info', e => {
+  logger.info(
+    {
+      message: e.message,
+      target: e.target,
+    },
+    'Database info'
+  );
 });
 
 // Log warnings
-prisma.$on('warn', (e) => {
-  logger.warn({
-    message: e.message,
-    target: e.target,
-  }, 'Database warning');
+prisma.$on('warn', e => {
+  logger.warn(
+    {
+      message: e.message,
+      target: e.target,
+    },
+    'Database warning'
+  );
 });
 
 export { prisma as db };

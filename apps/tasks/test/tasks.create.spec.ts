@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  vi,
+} from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import { tasksRouter } from '../src/routes/tasks.js';
@@ -39,13 +47,13 @@ describe('POST /v1/tasks/create', () => {
   beforeAll(async () => {
     // Create Express app for testing
     app = express();
-    
+
     // Add middleware
     app.use(express.json());
-    
+
     // Add routes
     app.use('/v1/tasks', tasksRouter);
-    
+
     // Add error handlers
     app.use(notFoundHandler);
     app.use(errorHandler);
@@ -58,11 +66,13 @@ describe('POST /v1/tasks/create', () => {
   beforeEach(async () => {
     // Reset mocks
     vi.clearAllMocks();
-    
+
     // Set up default mocks for successful cases
     const { db } = await import('../src/db/client.js');
-    const { idempotencyService } = await import('../src/services/idempotency.js');
-    
+    const { idempotencyService } = await import(
+      '../src/services/idempotency.js'
+    );
+
     // Default database mocks
     const mockRun = {
       id: 'test-run-id-123',
@@ -75,14 +85,14 @@ describe('POST /v1/tasks/create', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    
+
     vi.mocked(db.run.create).mockResolvedValue(mockRun);
     vi.mocked(db.run.update).mockResolvedValue({
       ...mockRun,
       status: 'COMPLETED',
       output: 'namaste bharat',
     });
-    
+
     // Default idempotency mocks
     vi.mocked(idempotencyService.validateKey).mockReturnValue(true);
     vi.mocked(idempotencyService.checkIdempotency).mockResolvedValue({
@@ -97,7 +107,7 @@ describe('POST /v1/tasks/create', () => {
     it('should create a task with ECHO agent and return expected response', async () => {
       const requestBody = {
         agent: 'echo',
-        input: 'namaste bharat'
+        input: 'namaste bharat',
       };
 
       const response = await request(app)
@@ -131,7 +141,7 @@ describe('POST /v1/tasks/create', () => {
 
     it('should create a task with default agent (echo) when agent is not specified', async () => {
       const requestBody = {
-        input: 'namaste bharat'
+        input: 'namaste bharat',
       };
 
       const response = await request(app)
@@ -152,8 +162,8 @@ describe('POST /v1/tasks/create', () => {
         meta: {
           source: 'test',
           priority: 'high',
-          tags: ['test', 'echo']
-        }
+          tags: ['test', 'echo'],
+        },
       };
 
       const response = await request(app)
@@ -169,8 +179,10 @@ describe('POST /v1/tasks/create', () => {
 
   describe('Idempotency testing', () => {
     it('should return same runId when using same Idempotency-Key', async () => {
-      const { idempotencyService } = await import('../src/services/idempotency.js');
-      
+      const { idempotencyService } = await import(
+        '../src/services/idempotency.js'
+      );
+
       // Mock idempotency service to return existing run for second request
       const existingRun = {
         id: 'existing-run-id-456',
@@ -183,7 +195,7 @@ describe('POST /v1/tasks/create', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       // First call: no existing run
       vi.mocked(idempotencyService.checkIdempotency)
         .mockResolvedValueOnce({
@@ -200,7 +212,7 @@ describe('POST /v1/tasks/create', () => {
 
       const requestBody = {
         agent: 'echo',
-        input: 'namaste bharat'
+        input: 'namaste bharat',
       };
 
       const idempotencyKey = 'test-key-123';
@@ -230,7 +242,7 @@ describe('POST /v1/tasks/create', () => {
 
     it('should return different runIds when using different Idempotency-Keys', async () => {
       const { db } = await import('../src/db/client.js');
-      
+
       // Mock different run IDs for different requests
       const firstRun = {
         id: 'first-run-id-123',
@@ -243,7 +255,7 @@ describe('POST /v1/tasks/create', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       const secondRun = {
         id: 'second-run-id-456',
         userId: 'system',
@@ -255,12 +267,12 @@ describe('POST /v1/tasks/create', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       // Mock database to return different run IDs
       vi.mocked(db.run.create)
         .mockResolvedValueOnce(firstRun)
         .mockResolvedValueOnce(secondRun);
-        
+
       vi.mocked(db.run.update)
         .mockResolvedValueOnce({
           ...firstRun,
@@ -275,7 +287,7 @@ describe('POST /v1/tasks/create', () => {
 
       const requestBody = {
         agent: 'echo',
-        input: 'namaste bharat'
+        input: 'namaste bharat',
       };
 
       // First request
@@ -301,14 +313,16 @@ describe('POST /v1/tasks/create', () => {
     });
 
     it('should handle invalid idempotency key format', async () => {
-      const { idempotencyService } = await import('../src/services/idempotency.js');
-      
+      const { idempotencyService } = await import(
+        '../src/services/idempotency.js'
+      );
+
       // Mock idempotency service to reject invalid key
       vi.mocked(idempotencyService.validateKey).mockReturnValue(false);
 
       const requestBody = {
         agent: 'echo',
-        input: 'namaste bharat'
+        input: 'namaste bharat',
       };
 
       const response = await request(app)
@@ -326,7 +340,7 @@ describe('POST /v1/tasks/create', () => {
   describe('Error handling', () => {
     it('should return 400 for missing input', async () => {
       const requestBody = {
-        agent: 'echo'
+        agent: 'echo',
       };
 
       const response = await request(app)
@@ -341,7 +355,7 @@ describe('POST /v1/tasks/create', () => {
     it('should return 400 for empty input', async () => {
       const requestBody = {
         agent: 'echo',
-        input: ''
+        input: '',
       };
 
       const response = await request(app)
@@ -357,7 +371,7 @@ describe('POST /v1/tasks/create', () => {
       const longInput = 'a'.repeat(10001);
       const requestBody = {
         agent: 'echo',
-        input: longInput
+        input: longInput,
       };
 
       const response = await request(app)
@@ -372,7 +386,7 @@ describe('POST /v1/tasks/create', () => {
     it('should return 400 for invalid agent', async () => {
       const requestBody = {
         agent: 'INVALID_AGENT',
-        input: 'namaste bharat'
+        input: 'namaste bharat',
       };
 
       const response = await request(app)
@@ -387,7 +401,7 @@ describe('POST /v1/tasks/create', () => {
     it('should return 400 for input with XSS content', async () => {
       const requestBody = {
         agent: 'echo',
-        input: '<script>alert("xss")</script>'
+        input: '<script>alert("xss")</script>',
       };
 
       const response = await request(app)
@@ -404,7 +418,7 @@ describe('POST /v1/tasks/create', () => {
     it('should return properly formatted response with all required fields', async () => {
       const requestBody = {
         agent: 'echo',
-        input: 'namaste bharat'
+        input: 'namaste bharat',
       };
 
       const response = await request(app)
@@ -416,7 +430,7 @@ describe('POST /v1/tasks/create', () => {
 
       // Validate response schema
       const responseBody = response.body;
-      
+
       // Required fields
       expect(responseBody).toHaveProperty('runId');
       expect(responseBody).toHaveProperty('status');
@@ -432,11 +446,19 @@ describe('POST /v1/tasks/create', () => {
       expect(typeof responseBody.createdAt).toBe('string');
 
       // Status enum values
-      expect(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED', 'CANCELLED']).toContain(responseBody.status);
-      
+      expect([
+        'PENDING',
+        'RUNNING',
+        'COMPLETED',
+        'FAILED',
+        'CANCELLED',
+      ]).toContain(responseBody.status);
+
       // Valid date
       expect(() => new Date(responseBody.createdAt)).not.toThrow();
-      expect(new Date(responseBody.createdAt).toISOString()).toBe(responseBody.createdAt);
+      expect(new Date(responseBody.createdAt).toISOString()).toBe(
+        responseBody.createdAt
+      );
     });
   });
 });

@@ -3,7 +3,7 @@ import { GenerativeAgent } from './generative.js';
 /**
  * Example usage of the generative agent
  */
-async function exampleUsage() {
+async function exampleUsage(): Promise<void> {
   console.log('=== Generative Agent Examples ===\n');
 
   const agent = new GenerativeAgent();
@@ -53,7 +53,8 @@ async function exampleUsage() {
     input: JSON.stringify({
       instructions: 'Create a product listing',
       format: 'json',
-      schema: 'z.object({ name: z.string(), price: z.number(), category: z.string(), inStock: z.boolean() })',
+      schema:
+        'z.object({ name: z.string(), price: z.number(), category: z.string(), inStock: z.boolean() })',
     }),
   });
 
@@ -69,7 +70,8 @@ async function exampleUsage() {
     runId: 'run-123',
     nodeId: 'node-202',
     input: JSON.stringify({
-      instructions: 'Create a detailed user profile with address and preferences',
+      instructions:
+        'Create a detailed user profile with address and preferences',
       format: 'json',
       schema: `z.object({
         name: z.string(),
@@ -118,10 +120,12 @@ async function exampleUsage() {
 /**
  * Example of cost tracking and metadata persistence
  */
-function costTrackingExample() {
+function costTrackingExample(): void {
   console.log('=== Cost Tracking Example ===\n');
 
-  console.log('The generative agent automatically tracks costs and persists metadata:');
+  console.log(
+    'The generative agent automatically tracks costs and persists metadata:'
+  );
   console.log('• Input/output token counts');
   console.log('• Cost calculation using trackLLMCost');
   console.log('• Metadata stored in Run for analysis');
@@ -145,7 +149,7 @@ function costTrackingExample() {
 /**
  * Example of schema validation and retry logic
  */
-function schemaValidationExample() {
+function schemaValidationExample(): void {
   console.log('=== Schema Validation Example ===\n');
 
   console.log('JSON generation with schema validation includes:');
@@ -169,7 +173,7 @@ function schemaValidationExample() {
 /**
  * Example of different use cases
  */
-function useCaseExamples() {
+function useCaseExamples(): Promise<void> | void {
   console.log('=== Use Case Examples ===\n');
 
   console.log('Common use cases for the generative agent:');
@@ -209,7 +213,7 @@ function useCaseExamples() {
 /**
  * Example of error handling scenarios
  */
-function errorHandlingExample() {
+function errorHandlingExample(): void {
   console.log('=== Error Handling Examples ===\n');
 
   console.log('The generative agent handles various error scenarios:');

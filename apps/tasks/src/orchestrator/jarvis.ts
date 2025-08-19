@@ -1,25 +1,20 @@
-import { 
-  AgentKind, 
-  AgentRunStatus, 
+import {
+  AgentKind,
+  AgentRunStatus,
   AgentNodeStatus,
-  type Agent,
   type AgentRun,
   type AgentNodeExecution,
   type AgentRunInput,
   type AgentRunOutput,
   createAgentRun,
   createAgentNodeExecution,
-  generateAgentRunId,
-  generateAgentNodeId,
-  isAgentRunTerminal,
-  isAgentNodeTerminal,
   calculateAgentRunDuration,
 } from '@bharat-agents/shared';
 import { logger } from '@bharat-agents/shared';
 import { env } from '../env.js';
 import { addAgentJob, addBrowserJob } from '../queue/index.js';
 import { recordAgentRun, recordAgentNode } from '../services/metrics.js';
-import { getCurrentUserId } from '../security/auth.js';
+// import { getCurrentUserId } from '../security/auth.js';
 
 // =============================================================================
 // TYPES & INTERFACES
@@ -59,25 +54,38 @@ export interface RunLimits {
 // AGENT SELECTION HEURISTICS
 // =============================================================================
 
-const BROWSER_KEYWORDS = ['open', 'click', 'visit', 'navigate', 'browse', 'web', 'url', 'page', 'site', 'website'];
+const BROWSER_KEYWORDS = [
+  'open',
+  'click',
+  'visit',
+  'navigate',
+  'browse',
+  'web',
+  'url',
+  'page',
+  'site',
+  'website',
+];
 
 export function selectAgentByHeuristics(input: AgentRunInput): AgentKind {
   const prompt = input.prompt?.toLowerCase() || '';
   const data = JSON.stringify(input.data || {}).toLowerCase();
   const context = JSON.stringify(input.context || {}).toLowerCase();
-  
+
   const combinedText = `${prompt} ${data} ${context}`;
-  
+
   // Check for browser-related keywords
-  const hasBrowserKeywords = BROWSER_KEYWORDS.some(keyword => 
+  const hasBrowserKeywords = BROWSER_KEYWORDS.some(keyword =>
     combinedText.includes(keyword)
   );
-  
+
   if (hasBrowserKeywords) {
-    logger.debug('Selected BROWSER agent based on keywords', { keywords: BROWSER_KEYWORDS.filter(k => combinedText.includes(k)) });
+    logger.debug('Selected BROWSER agent based on keywords', {
+      keywords: BROWSER_KEYWORDS.filter(k => combinedText.includes(k)),
+    });
     return AgentKind.BROWSER;
   }
-  
+
   // Default to GEN agent for text generation tasks
   logger.debug('Selected GEN agent as default');
   return AgentKind.GEN;
@@ -92,12 +100,15 @@ export function selectAgentByHeuristics(input: AgentRunInput): AgentKind {
  * Simply returns the input as output
  */
 class EchoAgentHandler implements AgentHandler {
-  async execute(run: AgentRun, node: AgentNodeExecution): Promise<AgentRunOutput> {
+  async execute(
+    run: AgentRun,
+    node: AgentNodeExecution
+  ): Promise<AgentRunOutput> {
     logger.info(`Echo agent executing run ${run.id}, node ${node.id}`);
-    
+
     // Simulate some processing time
     await new Promise(resolve => setTimeout(resolve, 100));
-    
+
     return {
       result: run.input,
       metadata: {
@@ -123,16 +134,19 @@ class BrowserAgentHandler implements AgentHandler {
     this.maxSteps = maxSteps;
   }
 
-  async execute(run: AgentRun, node: AgentNodeExecution): Promise<AgentRunOutput> {
+  async execute(
+    run: AgentRun,
+    node: AgentNodeExecution
+  ): Promise<AgentRunOutput> {
     logger.info(`Browser agent executing run ${run.id}, node ${node.id}`);
-    
+
     // Reset step count for new execution
     this.stepCount = 0;
-    
+
     // TODO: Implement actual browser automation in Phase 1
     // For now, simulate browser steps with limits
     const steps = this.simulateBrowserSteps(run.input);
-    
+
     return {
       result: {
         steps: steps,
@@ -153,7 +167,7 @@ class BrowserAgentHandler implements AgentHandler {
   private simulateBrowserSteps(input: AgentRunInput): string[] {
     const steps: string[] = [];
     const prompt = input.prompt?.toLowerCase() || '';
-    
+
     // Simulate steps based on input
     if (prompt.includes('open') || prompt.includes('visit')) {
       if (this.stepCount >= this.maxSteps) {
@@ -162,7 +176,7 @@ class BrowserAgentHandler implements AgentHandler {
       steps.push('navigate_to_page');
       this.stepCount++;
     }
-    
+
     if (prompt.includes('click')) {
       if (this.stepCount >= this.maxSteps) {
         throw new Error(`Browser step limit exceeded: ${this.maxSteps}`);
@@ -170,7 +184,7 @@ class BrowserAgentHandler implements AgentHandler {
       steps.push('click_element');
       this.stepCount++;
     }
-    
+
     if (prompt.includes('type') || prompt.includes('input')) {
       if (this.stepCount >= this.maxSteps) {
         throw new Error(`Browser step limit exceeded: ${this.maxSteps}`);
@@ -178,7 +192,7 @@ class BrowserAgentHandler implements AgentHandler {
       steps.push('type_text');
       this.stepCount++;
     }
-    
+
     return steps;
   }
 }
@@ -194,16 +208,19 @@ class GenAgentHandler implements AgentHandler {
     this.maxLlmCalls = maxLlmCalls;
   }
 
-  async execute(run: AgentRun, node: AgentNodeExecution): Promise<AgentRunOutput> {
+  async execute(
+    run: AgentRun,
+    node: AgentNodeExecution
+  ): Promise<AgentRunOutput> {
     logger.info(`Gen agent executing run ${run.id}, node ${node.id}`);
-    
+
     // Reset call count for new execution
     this.llmCallCount = 0;
-    
+
     // TODO: Implement actual LLM calls in Phase 1
     // For now, simulate LLM calls with limits
     const result = await this.simulateLlmCalls(run.input);
-    
+
     return {
       result: result,
       metadata: {
@@ -219,21 +236,21 @@ class GenAgentHandler implements AgentHandler {
 
   private async simulateLlmCalls(input: AgentRunInput): Promise<string> {
     const prompt = input.prompt || 'Generate some text';
-    
+
     // Simulate LLM calls based on input complexity
     const words = prompt.split(' ').length;
     const estimatedCalls = Math.min(Math.ceil(words / 10), 3); // 1 call per 10 words, max 3
-    
+
     for (let i = 0; i < estimatedCalls; i++) {
       if (this.llmCallCount >= this.maxLlmCalls) {
         throw new Error(`LLM call limit exceeded: ${this.maxLlmCalls}`);
       }
-      
+
       // Simulate LLM call
       await new Promise(resolve => setTimeout(resolve, 200));
       this.llmCallCount++;
     }
-    
+
     return `Generated response for: "${prompt}" (${this.llmCallCount} LLM calls used)`;
   }
 }
@@ -271,7 +288,7 @@ class AgentHandlerFactory {
     this.registerHandler(AgentKind.ECHO, new EchoAgentHandler());
     this.registerHandler(AgentKind.BROWSER, new BrowserAgentHandler());
     this.registerHandler(AgentKind.GEN, new GenAgentHandler());
-    
+
     logger.info('Agent handlers initialized with limits');
   }
 }
@@ -311,7 +328,10 @@ class InMemoryStorage {
     }
   }
 
-  async updateNode(nodeId: string, updates: Partial<AgentNodeExecution>): Promise<void> {
+  async updateNode(
+    nodeId: string,
+    updates: Partial<AgentNodeExecution>
+  ): Promise<void> {
     const node = this.nodes.get(nodeId);
     if (node) {
       Object.assign(node, updates);
@@ -326,14 +346,20 @@ class InMemoryStorage {
       .slice(0, limit);
   }
 
-  async listRunsByUser(userId: string, limit: number = 100): Promise<AgentRun[]> {
+  async listRunsByUser(
+    userId: string,
+    limit: number = 100
+  ): Promise<AgentRun[]> {
     return Array.from(this.runs.values())
       .filter(run => run.metadata.userId === userId)
       .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())
       .slice(0, limit);
   }
 
-  async listRunsByAgent(agentId: string, limit: number = 100): Promise<AgentRun[]> {
+  async listRunsByAgent(
+    agentId: string,
+    limit: number = 100
+  ): Promise<AgentRun[]> {
     return Array.from(this.runs.values())
       .filter(run => run.agentId === agentId)
       .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())
@@ -371,11 +397,11 @@ export class JarvisOrchestrator {
    */
   async handleCreateRun(request: CreateRunRequest): Promise<CreateRunResponse> {
     const { userId, input, agent, options } = request;
-    
+
     try {
       // Determine agent type if not specified
       const selectedAgent = agent || selectAgentByHeuristics(input);
-      
+
       logger.info(`Creating run for agent ${selectedAgent} by user ${userId}`, {
         agentSpecified: !!agent,
         selectedAgent,
@@ -388,13 +414,17 @@ export class JarvisOrchestrator {
       }
 
       // Create run with RBAC metadata
-      const run = createAgentRun(`agent_${selectedAgent.toLowerCase()}`, input, {
-        userId,
-        agentKind: selectedAgent,
-        agentName: `${selectedAgent} Agent`,
-        agentVersion: '1.0.0',
-        ...options?.metadata,
-      });
+      const run = createAgentRun(
+        `agent_${selectedAgent.toLowerCase()}`,
+        input,
+        {
+          userId,
+          agentKind: selectedAgent,
+          agentName: `${selectedAgent} Agent`,
+          agentVersion: '1.0.0',
+          ...options?.metadata,
+        }
+      );
 
       // Create execution node
       const node = createAgentNodeExecution(
@@ -418,7 +448,6 @@ export class JarvisOrchestrator {
       } else {
         return await this.handleSyncExecution(run, node, selectedAgent);
       }
-
     } catch (error) {
       logger.error('Error creating run:', error);
       throw error;
@@ -429,28 +458,32 @@ export class JarvisOrchestrator {
    * Handle async execution using BullMQ
    */
   private async handleAsyncExecution(
-    run: AgentRun, 
-    node: AgentNodeExecution, 
+    run: AgentRun,
+    node: AgentNodeExecution,
     agentKind: AgentKind
   ): Promise<CreateRunResponse> {
     try {
       // Add job to appropriate queue
-      const queue = agentKind === AgentKind.BROWSER ? addBrowserJob : addAgentJob;
-      const job = await queue({
-        runId: run.id,
-        nodeId: node.id,
-        agentKind,
-        input: run.input,
-        userId: run.metadata.userId as string,
-      }, {
-        priority: 'normal',
-        delay: 0,
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 2000,
+      const queue =
+        agentKind === AgentKind.BROWSER ? addBrowserJob : addAgentJob;
+      const job = await queue(
+        {
+          runId: run.id,
+          nodeId: node.id,
+          agentKind,
+          input: run.input,
+          userId: run.metadata.userId as string,
         },
-      });
+        {
+          priority: 'normal',
+          delay: 0,
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 2000,
+          },
+        }
+      );
 
       logger.info(`Queued async job for run ${run.id}`, { jobId: job.id });
 
@@ -461,17 +494,19 @@ export class JarvisOrchestrator {
         runId: run.id,
         status: AgentRunStatus.PENDING,
       };
-
     } catch (error) {
       logger.error(`Error queuing async job for run ${run.id}:`, error);
-      
+
       // Update run with error
       run.status = AgentRunStatus.FAILED;
       run.error = {
         code: 'QUEUE_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error',
       };
-      await this.storage.updateRun(run.id, { status: run.status, error: run.error });
+      await this.storage.updateRun(run.id, {
+        status: run.status,
+        error: run.error,
+      });
 
       // Record metrics
       recordAgentRun(agentKind, AgentRunStatus.FAILED);
@@ -484,8 +519,8 @@ export class JarvisOrchestrator {
    * Handle sync execution with timeouts and limits
    */
   async handleSyncExecution(
-    run: AgentRun, 
-    node: AgentNodeExecution, 
+    run: AgentRun,
+    node: AgentNodeExecution,
     agentKind: AgentKind
   ): Promise<CreateRunResponse> {
     const limits = this.getRunLimits();
@@ -499,17 +534,22 @@ export class JarvisOrchestrator {
       // Update node status to running
       node.status = AgentNodeStatus.RUNNING;
       node.startedAt = new Date();
-      await this.storage.updateNode(node.id, { 
-        status: node.status, 
-        startedAt: node.startedAt 
+      await this.storage.updateNode(node.id, {
+        status: node.status,
+        startedAt: node.startedAt,
       });
 
-      logger.info(`Executing run ${run.id}, node ${node.id} with timeout ${limits.nodeTimeout}ms`);
+      logger.info(
+        `Executing run ${run.id}, node ${node.id} with timeout ${limits.nodeTimeout}ms`
+      );
 
       // Execute with timeout
       const output = await Promise.race([
         this.executeWithLimits(run, node, agentKind, limits),
-        this.createTimeout(limits.nodeTimeout, `Node execution timeout: ${limits.nodeTimeout}ms`)
+        this.createTimeout(
+          limits.nodeTimeout,
+          `Node execution timeout: ${limits.nodeTimeout}ms`
+        ),
       ]);
 
       // Update node with success
@@ -547,7 +587,6 @@ export class JarvisOrchestrator {
         status: run.status,
         output: run.output,
       };
-
     } catch (error) {
       logger.error(`Error executing run ${run.id}:`, error);
 
@@ -600,17 +639,22 @@ export class JarvisOrchestrator {
   /**
    * Execute a run from queue worker (public method for queue integration)
    */
-  async executeRunFromQueue(runId: string, nodeId: string, agentKind: AgentKind, userId: string): Promise<CreateRunResponse> {
+  async executeRunFromQueue(
+    runId: string,
+    nodeId: string,
+    agentKind: AgentKind,
+    userId: string
+  ): Promise<CreateRunResponse> {
     const run = await this.getRun(runId, userId);
     if (!run) {
       throw new Error(`Run ${runId} not found`);
     }
-    
+
     const node = await this.getNode(nodeId);
     if (!node) {
       throw new Error(`Node ${nodeId} not found`);
     }
-    
+
     return await this.handleSyncExecution(run, node, agentKind);
   }
 
@@ -618,10 +662,10 @@ export class JarvisOrchestrator {
    * Execute agent with limits enforcement
    */
   private async executeWithLimits(
-    run: AgentRun, 
-    node: AgentNodeExecution, 
-    agentKind: AgentKind, 
-    limits: RunLimits
+    run: AgentRun,
+    node: AgentNodeExecution,
+    agentKind: AgentKind,
+    _limits: RunLimits
   ): Promise<AgentRunOutput> {
     // Get appropriate handler
     const handler = AgentHandlerFactory.getHandler(agentKind);
@@ -644,14 +688,16 @@ export class JarvisOrchestrator {
    */
   async getRun(runId: string, userId: string): Promise<AgentRun | null> {
     const run = await this.storage.getRun(runId);
-    
+
     if (!run) {
       return null;
     }
 
     // RBAC enforcement: users can only access their own runs
     if (run.metadata.userId !== userId) {
-      logger.warn(`User ${userId} attempted to access run ${runId} owned by ${run.metadata.userId}`);
+      logger.warn(
+        `User ${userId} attempted to access run ${runId} owned by ${run.metadata.userId}`
+      );
       throw new Error('Access denied: You can only access your own runs');
     }
 
@@ -678,14 +724,18 @@ export class JarvisOrchestrator {
   /**
    * List runs by agent with RBAC enforcement
    */
-  async listRunsByAgent(agentId: string, limit: number = 100, userId?: string): Promise<AgentRun[]> {
+  async listRunsByAgent(
+    agentId: string,
+    limit: number = 100,
+    userId?: string
+  ): Promise<AgentRun[]> {
     const runs = await this.storage.listRunsByAgent(agentId, limit);
-    
+
     if (userId) {
       // Filter by user for RBAC
       return runs.filter(run => run.metadata.userId === userId);
     }
-    
+
     return runs;
   }
 
@@ -713,29 +763,30 @@ export class JarvisOrchestrator {
   /**
    * Get run limits configuration
    */
-  getRunLimits(): RunLimits {
-    return this.getRunLimits();
-  }
+  // Removed duplicate; the private getRunLimits defines the config.
 
   /**
    * Handle a database Run record (for compatibility with existing controller)
    */
-  async handle(run: any): Promise<{ status: string; output: string }> {
+  async handle(run: {
+    agent: string;
+    input: string;
+  }): Promise<{ status: string; output: string }> {
     try {
       // For ECHO agent, simply return the input as output
       if (run.agent.toLowerCase() === 'echo') {
         return {
           status: 'COMPLETED',
-          output: run.input
+          output: run.input,
         };
       }
-      
+
       // For other agents, return error for now
       throw new Error(`Agent ${run.agent} not implemented`);
     } catch (error) {
       return {
         status: 'FAILED',
-        output: error instanceof Error ? error.message : 'Unknown error'
+        output: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }

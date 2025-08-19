@@ -21,9 +21,9 @@ export const createErrorResponse = (
   statusCode: number = 500,
   details?: Record<string, unknown>
 ): StructuredErrorResponse => {
-  const requestId = req.headers['x-request-id'] as string || 'unknown';
-  const traceId = req.headers['x-trace-id'] as string || requestId;
-  
+  const requestId = (req.headers['x-request-id'] as string) || 'unknown';
+  const traceId = (req.headers['x-trace-id'] as string) || requestId;
+
   return {
     error: error instanceof Error ? error.name : 'Error',
     message: error instanceof Error ? error.message : error,
@@ -60,16 +60,11 @@ export const createValidationErrorResponse = (
   message: string,
   value?: unknown
 ): StructuredErrorResponse => {
-  return createErrorResponse(
-    req,
-    'Validation Error',
-    400,
-    {
-      field,
-      message,
-      ...(value !== undefined && { value }),
-    }
-  );
+  return createErrorResponse(req, 'Validation Error', 400, {
+    field,
+    message,
+    ...(value !== undefined && { value }),
+  });
 };
 
 /**
@@ -80,7 +75,6 @@ export const createNotFoundErrorResponse = (
   resource: string,
   id?: string
 ): StructuredErrorResponse => {
-  const message = id ? `${resource} with id '${id}' not found` : `${resource} not found`;
   return createErrorResponse(req, 'Not Found', 404, { resource, id });
 };
 

@@ -41,7 +41,7 @@ export interface HealthStatus {
 
 const PRESSURE_THRESHOLDS = {
   MEMORY_USAGE_PERCENT: 85, // 85% memory usage
-  CPU_LOAD_AVERAGE: 0.8,    // 80% CPU load
+  CPU_LOAD_AVERAGE: 0.8, // 80% CPU load
   DB_RESPONSE_TIME_MS: 1000, // 1 second
   REDIS_RESPONSE_TIME_MS: 100, // 100ms
 };
@@ -50,13 +50,16 @@ const PRESSURE_THRESHOLDS = {
 // Health Check Functions
 // =============================================================================
 
-async function checkDatabaseHealth(): Promise<{ status: 'connected' | 'disconnected'; responseTime: number }> {
+async function checkDatabaseHealth(): Promise<{
+  status: 'connected' | 'disconnected';
+  responseTime: number;
+}> {
   const startTime = Date.now();
-  
+
   try {
     await db.$queryRaw`SELECT 1`;
     const responseTime = Date.now() - startTime;
-    
+
     return {
       status: 'connected',
       responseTime,
@@ -70,13 +73,16 @@ async function checkDatabaseHealth(): Promise<{ status: 'connected' | 'disconnec
   }
 }
 
-async function checkRedisHealthWithTiming(): Promise<{ status: 'connected' | 'disconnected'; responseTime: number }> {
+async function checkRedisHealthWithTiming(): Promise<{
+  status: 'connected' | 'disconnected';
+  responseTime: number;
+}> {
   const startTime = Date.now();
-  
+
   try {
     const isHealthy = await checkRedisHealth();
     const responseTime = Date.now() - startTime;
-    
+
     return {
       status: isHealthy ? 'connected' : 'disconnected',
       responseTime,
@@ -95,7 +101,7 @@ function getMemoryUsage() {
   const total = memUsage.heapTotal;
   const used = memUsage.heapUsed;
   const percentage = (used / total) * 100;
-  
+
   return {
     used: Math.round(used / 1024 / 1024), // MB
     total: Math.round(total / 1024 / 1024), // MB
@@ -107,10 +113,11 @@ function getCpuLoad(): { load: number; cores: number } {
   // Simple CPU load calculation based on uptime
   const uptime = process.uptime();
   const load = Math.min(uptime / 100, 1); // Simple approximation
-  
+
+  const { cpus } = await import('os');
   return {
     load: Math.round(load * 100) / 100,
-    cores: require('os').cpus().length,
+    cores: cpus().length,
   };
 }
 
@@ -118,17 +125,22 @@ function getCpuLoad(): { load: number; cores: number } {
 // Pressure Detection
 // =============================================================================
 
-function detectPressure(healthData: Omit<HealthStatus, 'pressure'>): HealthStatus['pressure'] {
+function detectPressure(
+  healthData: Omit<HealthStatus, 'pressure'>
+): HealthStatus['pressure'] {
   const memory = healthData.memory;
   const cpu = healthData.cpu;
   const database = healthData.database;
   const redis = healthData.redis;
-  
+
   return {
-    memoryPressure: memory.percentage > PRESSURE_THRESHOLDS.MEMORY_USAGE_PERCENT,
+    memoryPressure:
+      memory.percentage > PRESSURE_THRESHOLDS.MEMORY_USAGE_PERCENT,
     cpuPressure: cpu.load > PRESSURE_THRESHOLDS.CPU_LOAD_AVERAGE,
-    databasePressure: database.responseTime > PRESSURE_THRESHOLDS.DB_RESPONSE_TIME_MS,
-    redisPressure: redis.responseTime > PRESSURE_THRESHOLDS.REDIS_RESPONSE_TIME_MS,
+    databasePressure:
+      database.responseTime > PRESSURE_THRESHOLDS.DB_RESPONSE_TIME_MS,
+    redisPressure:
+      redis.responseTime > PRESSURE_THRESHOLDS.REDIS_RESPONSE_TIME_MS,
   };
 }
 
@@ -138,16 +150,16 @@ function detectPressure(healthData: Omit<HealthStatus, 'pressure'>): HealthStatu
 
 export async function performHealthCheck(): Promise<HealthStatus> {
   const startTime = Date.now();
-  
+
   // Parallel health checks
   const [databaseHealth, redisHealth] = await Promise.all([
     checkDatabaseHealth(),
     checkRedisHealthWithTiming(),
   ]);
-  
+
   const memory = getMemoryUsage();
   const cpu = getCpuLoad();
-  
+
   const healthData: Omit<HealthStatus, 'pressure'> = {
     status: 'healthy', // Will be updated based on pressure
     timestamp: new Date().toISOString(),
@@ -157,28 +169,39 @@ export async function performHealthCheck(): Promise<HealthStatus> {
     database: databaseHealth,
     redis: redisHealth,
   };
-  
+
   // Detect pressure
   const pressure = detectPressure(healthData);
-  
+
   // Determine overall status
   let status: HealthStatus['status'] = 'healthy';
-  
-  if (databaseHealth.status === 'disconnected' || redisHealth.status === 'disconnected') {
+
+  if (
+    databaseHealth.status === 'disconnected' ||
+    redisHealth.status === 'disconnected'
+  ) {
     status = 'unhealthy';
-  } else if (pressure.memoryPressure || pressure.cpuPressure || pressure.databasePressure || pressure.redisPressure) {
+  } else if (
+    pressure.memoryPressure ||
+    pressure.cpuPressure ||
+    pressure.databasePressure ||
+    pressure.redisPressure
+  ) {
     status = 'degraded';
   }
-  
+
   const result: HealthStatus = {
     ...healthData,
     status,
     pressure,
   };
-  
+
   const totalTime = Date.now() - startTime;
-  logger.debug({ healthCheck: result, duration: totalTime }, 'Health check completed');
-  
+  logger.debug(
+    { healthCheck: result, duration: totalTime },
+    'Health check completed'
+  );
+
   return result;
 }
 
@@ -192,39 +215,47 @@ export function startPressureMonitoring(intervalMs: number = 30000) {
   if (pressureMonitoringInterval) {
     clearInterval(pressureMonitoringInterval);
   }
-  
+
   pressureMonitoringInterval = setInterval(async () => {
     try {
       const health = await performHealthCheck();
-      
+
       if (health.status === 'unhealthy') {
         logger.error({ health }, 'System is unhealthy');
       } else if (health.status === 'degraded') {
         logger.warn({ health }, 'System is under pressure');
       }
-      
+
       // Log pressure indicators
       if (health.pressure.memoryPressure) {
-        logger.warn({ memoryUsage: health.memory }, 'High memory usage detected');
+        logger.warn(
+          { memoryUsage: health.memory },
+          'High memory usage detected'
+        );
       }
-      
+
       if (health.pressure.cpuPressure) {
         logger.warn({ cpuLoad: health.cpu }, 'High CPU load detected');
       }
-      
+
       if (health.pressure.databasePressure) {
-        logger.warn({ dbResponseTime: health.database.responseTime }, 'Database response time high');
+        logger.warn(
+          { dbResponseTime: health.database.responseTime },
+          'Database response time high'
+        );
       }
-      
+
       if (health.pressure.redisPressure) {
-        logger.warn({ redisResponseTime: health.redis.responseTime }, 'Redis response time high');
+        logger.warn(
+          { redisResponseTime: health.redis.responseTime },
+          'Redis response time high'
+        );
       }
-      
     } catch (error) {
       logger.error({ error }, 'Pressure monitoring failed');
     }
   }, intervalMs);
-  
+
   logger.info({ intervalMs }, 'Pressure monitoring started');
 }
 

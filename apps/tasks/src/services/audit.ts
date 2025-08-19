@@ -8,8 +8,8 @@ export interface AuditEvent {
   nodeId?: string;
   userId?: string;
   action: string;
-  payload?: any;
-  result?: any;
+  payload?: unknown;
+  result?: unknown;
   status: 'OK' | 'ERR';
   durationMs: number;
 }
@@ -28,11 +28,11 @@ const SECRET_PATTERNS = [
 /**
  * Redacts sensitive information from JSON data
  */
-function redactSecrets(data: any): any {
+function redactSecrets(data: unknown): unknown {
   if (typeof data === 'string') {
     let redacted = data;
     SECRET_PATTERNS.forEach(pattern => {
-      redacted = redacted.replace(pattern, (match) => {
+      redacted = redacted.replace(pattern, match => {
         const parts = match.split(':');
         if (parts.length >= 2) {
           return `${parts[0]}: "[REDACTED]"`;
@@ -42,21 +42,26 @@ function redactSecrets(data: any): any {
     });
     return redacted;
   }
-  
+
   if (typeof data === 'object' && data !== null) {
     if (Array.isArray(data)) {
       return data.map(item => redactSecrets(item));
     }
-    
-    const redacted: any = {};
+
+    const redacted: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
       // Redact common secret keys (case insensitive)
       const lowerKey = key.toLowerCase();
-      if (lowerKey.includes('otp') || 
-          lowerKey.includes('password') || 
-          lowerKey.includes('secret') || 
-          lowerKey.includes('token') ||
-          lowerKey.includes('key') && (lowerKey.includes('api') || lowerKey.includes('access') || lowerKey.includes('private'))) {
+      if (
+        lowerKey.includes('otp') ||
+        lowerKey.includes('password') ||
+        lowerKey.includes('secret') ||
+        lowerKey.includes('token') ||
+        (lowerKey.includes('key') &&
+          (lowerKey.includes('api') ||
+            lowerKey.includes('access') ||
+            lowerKey.includes('private')))
+      ) {
         redacted[key] = '[REDACTED]';
       } else {
         redacted[key] = redactSecrets(value);
@@ -64,19 +69,19 @@ function redactSecrets(data: any): any {
     }
     return redacted;
   }
-  
+
   return data;
 }
 
 /**
  * Truncates data if it exceeds the maximum JSONB size
  */
-function truncateIfNeeded(data: any): any {
+function truncateIfNeeded(data: unknown): unknown {
   const jsonString = JSON.stringify(data);
   if (jsonString.length <= MAX_JSONB_SIZE) {
     return data;
   }
-  
+
   // Try to truncate while preserving structure
   if (typeof data === 'object' && data !== null) {
     if (Array.isArray(data)) {
@@ -86,18 +91,19 @@ function truncateIfNeeded(data: any): any {
         ...truncated,
         _truncated: true,
         _originalLength: data.length,
-        _message: `Array truncated from ${data.length} items to ${truncated.length} items`
+        _message: `Array truncated from ${data.length} items to ${truncated.length} items`,
       };
     } else {
       // For objects, try to keep essential fields and truncate large ones
-      const truncated: any = {};
+      const truncated: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(data)) {
         const valueString = JSON.stringify(value);
-        if (valueString.length > MAX_JSONB_SIZE / 10) { // If any single field is too large
+        if (valueString.length > MAX_JSONB_SIZE / 10) {
+          // If any single field is too large
           truncated[key] = {
             _truncated: true,
             _originalSize: valueString.length,
-            _message: `Field '${key}' was too large and has been truncated`
+            _message: `Field '${key}' was too large and has been truncated`,
           };
         } else {
           truncated[key] = value;
@@ -106,13 +112,13 @@ function truncateIfNeeded(data: any): any {
       return truncated;
     }
   }
-  
+
   // For strings or other types, truncate directly
   return {
     _truncated: true,
     _originalSize: jsonString.length,
     _message: 'Data was too large and has been truncated',
-    _preview: jsonString.substring(0, 1000) + '...'
+    _preview: jsonString.substring(0, 1000) + '...',
   };
 }
 
@@ -122,11 +128,15 @@ function truncateIfNeeded(data: any): any {
 export async function record(event: AuditEvent): Promise<void> {
   try {
     const startTime = Date.now();
-    
+
     // Process payload and result
-    const processedPayload = event.payload ? truncateIfNeeded(redactSecrets(event.payload)) : null;
-    const processedResult = event.result ? truncateIfNeeded(redactSecrets(event.result)) : null;
-    
+    const processedPayload = event.payload
+      ? truncateIfNeeded(redactSecrets(event.payload))
+      : null;
+    const processedResult = event.result
+      ? truncateIfNeeded(redactSecrets(event.result))
+      : null;
+
     // Create audit log entry
     await prisma.auditLog.create({
       data: {
@@ -140,7 +150,7 @@ export async function record(event: AuditEvent): Promise<void> {
         result: processedResult,
       },
     });
-    
+
     const processingTime = Date.now() - startTime;
     logger.debug(
       {
@@ -162,7 +172,7 @@ export async function record(event: AuditEvent): Promise<void> {
       },
       'Failed to record audit event'
     );
-    
+
     // Don't throw the error to avoid breaking the main flow
     // The audit failure shouldn't cause the main operation to fail
   }
@@ -184,8 +194,8 @@ export async function getAuditLogs(
     action: string;
     status: string;
     durationMs: number;
-    payload?: any;
-    result?: any;
+    payload?: unknown;
+    result?: unknown;
     createdAt: Date;
   }>;
   nextCursor?: string;
@@ -194,7 +204,7 @@ export async function getAuditLogs(
   try {
     const where = { runId };
     const take = Math.min(limit, 100); // Cap at 100 items per request
-    
+
     const logs = await prisma.auditLog.findMany({
       where,
       take: take + 1, // Take one extra to determine if there are more
@@ -213,11 +223,13 @@ export async function getAuditLogs(
         createdAt: true,
       },
     });
-    
+
     const hasMore = logs.length > take;
     const actualLogs = hasMore ? logs.slice(0, take) : logs;
-    const nextCursor = hasMore ? actualLogs[actualLogs.length - 1].id : undefined;
-    
+    const nextCursor = hasMore
+      ? actualLogs[actualLogs.length - 1].id
+      : undefined;
+
     return {
       logs: actualLogs,
       nextCursor,
@@ -248,22 +260,23 @@ export async function getAuditStats(runId: string): Promise<{
   actions: Array<{ action: string; count: number }>;
 }> {
   try {
-    const [totalEvents, successCount, errorCount, avgDuration, actionStats] = await Promise.all([
-      prisma.auditLog.count({ where: { runId } }),
-      prisma.auditLog.count({ where: { runId, status: 'OK' } }),
-      prisma.auditLog.count({ where: { runId, status: 'ERR' } }),
-      prisma.auditLog.aggregate({
-        where: { runId },
-        _avg: { durationMs: true },
-      }),
-      prisma.auditLog.groupBy({
-        by: ['action'],
-        where: { runId },
-        _count: { action: true },
-        orderBy: { _count: { action: 'desc' } },
-      }),
-    ]);
-    
+    const [totalEvents, successCount, errorCount, avgDuration, actionStats] =
+      await Promise.all([
+        prisma.auditLog.count({ where: { runId } }),
+        prisma.auditLog.count({ where: { runId, status: 'OK' } }),
+        prisma.auditLog.count({ where: { runId, status: 'ERR' } }),
+        prisma.auditLog.aggregate({
+          where: { runId },
+          _avg: { durationMs: true },
+        }),
+        prisma.auditLog.groupBy({
+          by: ['action'],
+          where: { runId },
+          _count: { action: true },
+          orderBy: { _count: { action: 'desc' } },
+        }),
+      ]);
+
     return {
       totalEvents,
       successCount,

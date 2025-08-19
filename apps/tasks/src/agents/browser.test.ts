@@ -20,7 +20,7 @@ describe('BrowserAgent', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock BrowserClient
     mockBrowserClient = {
       createSession: vi.fn(),
@@ -32,9 +32,9 @@ describe('BrowserAgent', () => {
       screenshot: vi.fn(),
       extract: vi.fn(),
     };
-    
+
     (BrowserClient as any).mockImplementation(() => mockBrowserClient);
-    
+
     agent = new BrowserAgent();
   });
 
@@ -71,7 +71,10 @@ describe('BrowserAgent', () => {
       mockBrowserClient.screenshot.mockResolvedValue({
         id: 'action-3',
         status: 'completed',
-        result: { success: true, screenshot: 'https://example.com/screenshot.png' },
+        result: {
+          success: true,
+          screenshot: 'https://example.com/screenshot.png',
+        },
       });
       mockBrowserClient.closeSession.mockResolvedValue(undefined);
 
@@ -84,9 +87,18 @@ describe('BrowserAgent', () => {
 
       // Verify browser client was called correctly
       expect(mockBrowserClient.createSession).toHaveBeenCalled();
-      expect(mockBrowserClient.goto).toHaveBeenCalledWith('session-123', 'https://example.com');
-      expect(mockBrowserClient.click).toHaveBeenCalledWith('session-123', 'current', 'button[data-testid="login"]');
-      expect(mockBrowserClient.closeSession).toHaveBeenCalledWith('session-123');
+      expect(mockBrowserClient.goto).toHaveBeenCalledWith(
+        'session-123',
+        'https://example.com'
+      );
+      expect(mockBrowserClient.click).toHaveBeenCalledWith(
+        'session-123',
+        'current',
+        'button[data-testid="login"]'
+      );
+      expect(mockBrowserClient.closeSession).toHaveBeenCalledWith(
+        'session-123'
+      );
     });
 
     it('should generate steps from instructions when not provided', async () => {
@@ -127,7 +139,10 @@ describe('BrowserAgent', () => {
       mockBrowserClient.screenshot.mockResolvedValue({
         id: 'action-3',
         status: 'completed',
-        result: { success: true, screenshot: 'https://example.com/screenshot.png' },
+        result: {
+          success: true,
+          screenshot: 'https://example.com/screenshot.png',
+        },
       });
       mockBrowserClient.closeSession.mockResolvedValue(undefined);
 
@@ -188,13 +203,17 @@ describe('BrowserAgent', () => {
 
       // Mock browser client to simulate slow operations
       mockBrowserClient.createSession.mockResolvedValue({ id: 'session-123' });
-      mockBrowserClient.goto.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 150)));
+      mockBrowserClient.goto.mockImplementation(
+        () => new Promise(resolve => setTimeout(resolve, 150))
+      );
       mockBrowserClient.closeSession.mockResolvedValue(undefined);
 
       const result = await agent.runNode(runArgs);
 
       expect(result.meta?.success).toBe(false);
-      expect(JSON.parse(result.output).error).toContain('Exceeded maximum duration');
+      expect(JSON.parse(result.output).error).toContain(
+        'Exceeded maximum duration'
+      );
 
       // Restore environment
       if (originalMaxDuration) {
@@ -210,19 +229,21 @@ describe('BrowserAgent', () => {
         nodeId: 'node-456',
         input: JSON.stringify({
           instructions: 'Test instructions',
-          steps: [
-            { action: 'goto', url: 'https://example.com' },
-          ],
+          steps: [{ action: 'goto', url: 'https://example.com' }],
         }),
       };
 
       // Mock browser client to throw an error
-      mockBrowserClient.createSession.mockRejectedValue(new Error('Browser service unavailable'));
+      mockBrowserClient.createSession.mockRejectedValue(
+        new Error('Browser service unavailable')
+      );
 
       const result = await agent.runNode(runArgs);
 
       expect(result.meta?.success).toBe(false);
-      expect(JSON.parse(result.output).error).toContain('Browser service unavailable');
+      expect(JSON.parse(result.output).error).toContain(
+        'Browser service unavailable'
+      );
     });
 
     it('should extract data when extract flag is set', async () => {
@@ -248,12 +269,18 @@ describe('BrowserAgent', () => {
       mockBrowserClient.extract.mockResolvedValue({
         id: 'action-2',
         status: 'completed',
-        result: { success: true, data: { name: 'John Doe', email: 'john@example.com' } },
+        result: {
+          success: true,
+          data: { name: 'John Doe', email: 'john@example.com' },
+        },
       });
       mockBrowserClient.screenshot.mockResolvedValue({
         id: 'action-3',
         status: 'completed',
-        result: { success: true, screenshot: 'https://example.com/screenshot.png' },
+        result: {
+          success: true,
+          screenshot: 'https://example.com/screenshot.png',
+        },
       });
       mockBrowserClient.closeSession.mockResolvedValue(undefined);
 
@@ -263,10 +290,17 @@ describe('BrowserAgent', () => {
       const output = JSON.parse(result.output);
       expect(output.success).toBe(true);
       expect(output.extractedData).toBeDefined();
-      expect(output.extractedData['.user-profile']).toEqual({ name: 'John Doe', email: 'john@example.com' });
+      expect(output.extractedData['.user-profile']).toEqual({
+        name: 'John Doe',
+        email: 'john@example.com',
+      });
 
       // Verify extract was called
-      expect(mockBrowserClient.extract).toHaveBeenCalledWith('session-123', 'current', '.user-profile');
+      expect(mockBrowserClient.extract).toHaveBeenCalledWith(
+        'session-123',
+        'current',
+        '.user-profile'
+      );
     });
 
     it('should keep session alive when keepAlive is true', async () => {
@@ -275,9 +309,7 @@ describe('BrowserAgent', () => {
         nodeId: 'node-456',
         input: JSON.stringify({
           instructions: 'Test instructions',
-          steps: [
-            { action: 'goto', url: 'https://example.com' },
-          ],
+          steps: [{ action: 'goto', url: 'https://example.com' }],
           keepAlive: true,
         }),
       };
@@ -292,7 +324,10 @@ describe('BrowserAgent', () => {
       mockBrowserClient.screenshot.mockResolvedValue({
         id: 'action-2',
         status: 'completed',
-        result: { success: true, screenshot: 'https://example.com/screenshot.png' },
+        result: {
+          success: true,
+          screenshot: 'https://example.com/screenshot.png',
+        },
       });
       // Note: closeSession should not be called when keepAlive is true
 

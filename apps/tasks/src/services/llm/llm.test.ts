@@ -57,7 +57,9 @@ describe('LLM Provider Adapters', () => {
         prompt: 'What is 2+2?',
       });
 
-      expect(response.text).toContain('System context: You are a helpful assistant.');
+      expect(response.text).toContain(
+        'System context: You are a helpful assistant.'
+      );
     });
 
     it('should handle tools parameter', async () => {
@@ -85,26 +87,29 @@ describe('LLM Provider Adapters', () => {
 
     it('should estimate tokens correctly', async () => {
       const shortPrompt = 'Hello';
-      const longPrompt = 'This is a much longer prompt that should have more tokens estimated';
-      
+      const longPrompt =
+        'This is a much longer prompt that should have more tokens estimated';
+
       const shortResponse = await mockLLM.complete({
         model: 'test-model',
         prompt: shortPrompt,
       });
-      
+
       const longResponse = await mockLLM.complete({
         model: 'test-model',
         prompt: longPrompt,
       });
 
-      expect(longResponse.inputTokens).toBeGreaterThan(shortResponse.inputTokens);
+      expect(longResponse.inputTokens).toBeGreaterThan(
+        shortResponse.inputTokens
+      );
     });
   });
 
   describe('LLMProvider Interface', () => {
     it('should implement the correct interface', () => {
       const mockLLM = new MockLLM();
-      
+
       expect(mockLLM).toHaveProperty('name');
       expect(mockLLM).toHaveProperty('complete');
       expect(typeof mockLLM.complete).toBe('function');
@@ -113,7 +118,7 @@ describe('LLM Provider Adapters', () => {
 
     it('should return the correct response structure', async () => {
       const mockLLM = new MockLLM();
-      
+
       const response = await mockLLM.complete({
         model: 'test-model',
         prompt: 'Test',

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AgentKind, AgentRunInput, AgentRunOutput } from '@bharat-agents/shared';
+import { AgentKind, AgentRunOutput } from '@bharat-agents/shared';
 import { env } from '../env.js';
 import { logger } from '@bharat-agents/shared';
 
@@ -29,10 +29,12 @@ export type PriceMonitorOutput = z.infer<typeof priceMonitorOutputSchema>;
 /**
  * Extract price from text using various patterns
  */
-export function extractPrice(text: string): { price: number; currency: string } | null {
+export function extractPrice(
+  text: string
+): { price: number; currency: string } | null {
   // Remove extra whitespace and normalize
   const normalizedText = text.trim().replace(/\s+/g, ' ');
-  
+
   // Common price patterns
   const pricePatterns = [
     // $123.45, $123,45, $123
@@ -114,12 +116,12 @@ export const priceMonitorSteps = [
     name: 'extract_price_text',
     type: 'extraction',
     action: env.ALLOW_EVALUATE ? 'evaluate' : 'innerText',
-    params: env.ALLOW_EVALUATE 
-      ? { 
+    params: env.ALLOW_EVALUATE
+      ? {
           code: `
             const element = document.querySelector('{{input.selector}}');
             return element ? element.textContent : null;
-          `
+          `,
         }
       : { selector: '{{input.selector}}' },
   },
@@ -127,9 +129,9 @@ export const priceMonitorSteps = [
     name: 'take_screenshot',
     type: 'artifact',
     action: 'screenshot',
-    params: { 
+    params: {
       filename: 'price-monitor-{{timestamp}}',
-      fullPage: false 
+      fullPage: false,
     },
   },
 ];
@@ -143,15 +145,18 @@ export const priceMonitorSteps = [
  */
 export async function executePriceMonitor(
   input: PriceMonitorInput,
-  browserSteps: any[]
+  _browserSteps: unknown[]
 ): Promise<AgentRunOutput> {
   const startTime = Date.now();
-  
-  logger.info({
-    productUrl: input.productUrl,
-    selector: input.selector,
-    allowEvaluate: env.ALLOW_EVALUATE,
-  }, 'Starting price monitoring flow');
+
+  logger.info(
+    {
+      productUrl: input.productUrl,
+      selector: input.selector,
+      allowEvaluate: env.ALLOW_EVALUATE,
+    },
+    'Starting price monitoring flow'
+  );
 
   try {
     // Simulate browser execution steps
@@ -160,8 +165,8 @@ export async function executePriceMonitor(
       navigate_to_product: { status: 'completed', url: input.productUrl },
       wait_for_price_element: { status: 'completed', selector: input.selector },
       extract_price_text: { status: 'completed', text: '$29.99' }, // Simulated price text
-      take_screenshot: { 
-        status: 'completed', 
+      take_screenshot: {
+        status: 'completed',
         artifact: {
           id: `screenshot-${Date.now()}`,
           name: 'price-monitor-screenshot',
@@ -169,7 +174,7 @@ export async function executePriceMonitor(
           url: `https://storage.example.com/screenshots/price-monitor-${Date.now()}.png`,
           size: 102400,
           createdAt: new Date().toISOString(),
-        }
+        },
       },
     };
 
@@ -191,12 +196,15 @@ export async function executePriceMonitor(
 
     const duration = Date.now() - startTime;
 
-    logger.info({
-      price: output.price,
-      currency: output.currency,
-      url: output.url,
-      duration,
-    }, 'Price monitoring flow completed successfully');
+    logger.info(
+      {
+        price: output.price,
+        currency: output.currency,
+        url: output.url,
+        duration,
+      },
+      'Price monitoring flow completed successfully'
+    );
 
     return {
       result: output,
@@ -211,16 +219,18 @@ export async function executePriceMonitor(
       },
       artifacts: [results.take_screenshot.artifact],
     };
-
   } catch (error) {
     const duration = Date.now() - startTime;
-    
-    logger.error({
-      error: error instanceof Error ? error.message : String(error),
-      productUrl: input.productUrl,
-      selector: input.selector,
-      duration,
-    }, 'Price monitoring flow failed');
+
+    logger.error(
+      {
+        error: error instanceof Error ? error.message : String(error),
+        productUrl: input.productUrl,
+        selector: input.selector,
+        duration,
+      },
+      'Price monitoring flow failed'
+    );
 
     throw error;
   }
@@ -232,7 +242,8 @@ export async function executePriceMonitor(
 
 export const priceMonitorFlow = {
   name: 'price_monitor',
-  description: 'Monitor product prices by extracting price information from web pages',
+  description:
+    'Monitor product prices by extracting price information from web pages',
   agentKind: AgentKind.BROWSER,
   inputSchema: priceMonitorInputSchema,
   outputSchema: priceMonitorOutputSchema,

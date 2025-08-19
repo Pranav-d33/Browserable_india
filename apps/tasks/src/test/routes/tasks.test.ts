@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
-import { createTask, getRunDetails, getRunAuditLogs } from '../../controllers/taskController.js';
+import {
+  createTask,
+  getRunDetails,
+  getRunAuditLogs,
+} from '../../controllers/taskController.js';
 import { authenticateToken, requireRole } from '../../security/auth.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
 import { createTaskSchema } from '../../schemas/validation.js';
@@ -49,9 +53,25 @@ app.use((req, res, next) => {
 });
 
 // Test routes
-app.post('/tasks/create', authenticateToken, requireRole(['user', 'admin']), validateRequest({ body: createTaskSchema }), createTask);
-app.get('/runs/:id', authenticateToken, requireRole(['admin', 'user']), getRunDetails);
-app.get('/runs/:id/logs', authenticateToken, requireRole(['admin', 'user']), getRunAuditLogs);
+app.post(
+  '/tasks/create',
+  authenticateToken,
+  requireRole(['user', 'admin']),
+  validateRequest({ body: createTaskSchema }),
+  createTask
+);
+app.get(
+  '/runs/:id',
+  authenticateToken,
+  requireRole(['admin', 'user']),
+  getRunDetails
+);
+app.get(
+  '/runs/:id/logs',
+  authenticateToken,
+  requireRole(['admin', 'user']),
+  getRunAuditLogs
+);
 
 describe('Tasks Routes', () => {
   beforeEach(() => {
@@ -206,9 +226,13 @@ describe('Tasks Routes', () => {
         },
       };
 
-      const { idempotencyService } = await import('../../services/idempotency.js');
+      const { idempotencyService } = await import(
+        '../../services/idempotency.js'
+      );
       vi.mocked(idempotencyService.validateKey).mockReturnValue(true);
-      vi.mocked(idempotencyService.checkIdempotency).mockResolvedValue(mockIdempotencyResult);
+      vi.mocked(idempotencyService.checkIdempotency).mockResolvedValue(
+        mockIdempotencyResult
+      );
 
       const response = await request(app)
         .post('/tasks/create')
@@ -228,12 +252,18 @@ describe('Tasks Routes', () => {
         output: 'Previous result',
       });
 
-      expect(idempotencyService.validateKey).toHaveBeenCalledWith('test-key-123');
-      expect(idempotencyService.checkIdempotency).toHaveBeenCalledWith('test-key-123');
+      expect(idempotencyService.validateKey).toHaveBeenCalledWith(
+        'test-key-123'
+      );
+      expect(idempotencyService.checkIdempotency).toHaveBeenCalledWith(
+        'test-key-123'
+      );
     });
 
     it('should reject invalid idempotency key', async () => {
-      const { idempotencyService } = await import('../../services/idempotency.js');
+      const { idempotencyService } = await import(
+        '../../services/idempotency.js'
+      );
       vi.mocked(idempotencyService.validateKey).mockReturnValue(false);
 
       const response = await request(app)
@@ -247,7 +277,8 @@ describe('Tasks Routes', () => {
       expect(response.status).toBe(400);
       expect(response.body).toMatchObject({
         error: 'Invalid Idempotency-Key',
-        message: 'Idempotency key must be alphanumeric with hyphens/underscores only',
+        message:
+          'Idempotency key must be alphanumeric with hyphens/underscores only',
       });
     });
 
@@ -267,7 +298,7 @@ describe('Tasks Routes', () => {
 
     it('should reject input that is too long', async () => {
       const longInput = 'a'.repeat(10001);
-      
+
       const response = await request(app)
         .post('/tasks/create')
         .set('Authorization', 'Bearer test-token')
@@ -390,7 +421,9 @@ describe('Tasks Routes', () => {
 
     it('should return 403 for unauthorized access', async () => {
       const { jarvis } = await import('../../orchestrator/jarvis.js');
-      vi.mocked(jarvis.getRun).mockRejectedValue(new Error('Access denied: You can only access your own runs'));
+      vi.mocked(jarvis.getRun).mockRejectedValue(
+        new Error('Access denied: You can only access your own runs')
+      );
 
       const response = await request(app)
         .get('/runs/run-123')
@@ -435,7 +468,9 @@ describe('Tasks Routes', () => {
       };
 
       const { jarvis } = await import('../../orchestrator/jarvis.js');
-      const { getAuditLogs, getAuditStats } = await import('../../services/audit.js');
+      const { getAuditLogs, getAuditStats } = await import(
+        '../../services/audit.js'
+      );
 
       vi.mocked(jarvis.getRun).mockResolvedValue(mockRun);
       vi.mocked(getAuditLogs).mockResolvedValue(mockAuditLogs);
@@ -496,7 +531,9 @@ describe('Tasks Routes', () => {
       };
 
       const { jarvis } = await import('../../orchestrator/jarvis.js');
-      const { getAuditLogs, getAuditStats } = await import('../../services/audit.js');
+      const { getAuditLogs, getAuditStats } = await import(
+        '../../services/audit.js'
+      );
 
       vi.mocked(jarvis.getRun).mockResolvedValue(mockRun);
       vi.mocked(getAuditLogs).mockResolvedValue(mockAuditLogs);
@@ -528,7 +565,9 @@ describe('Tasks Routes', () => {
 
     it('should return 403 for unauthorized access', async () => {
       const { jarvis } = await import('../../orchestrator/jarvis.js');
-      vi.mocked(jarvis.getRun).mockRejectedValue(new Error('Access denied: You can only access your own runs'));
+      vi.mocked(jarvis.getRun).mockRejectedValue(
+        new Error('Access denied: You can only access your own runs')
+      );
 
       const response = await request(app)
         .get('/runs/run-123/logs')

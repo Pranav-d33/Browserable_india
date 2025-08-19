@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { userRateLimitService } from '../services/rateLimit.js';
 import { getCurrentUserId } from '../security/auth.js';
 import { AuthenticatedRequest } from '../security/auth.js';
@@ -24,7 +24,7 @@ export async function userRateLimitMiddleware(
 
     // Check rate limit
     const rateLimitResult = await userRateLimitService.checkRateLimit(userId);
-    
+
     if (!rateLimitResult.allowed) {
       res.status(429).json({
         error: 'Rate limit exceeded',
@@ -32,21 +32,24 @@ export async function userRateLimitMiddleware(
         retryAfter: rateLimitResult.retryAfter,
         resetTime: rateLimitResult.resetTime,
       });
-      
+
       // Set retry-after header
       if (rateLimitResult.retryAfter) {
         res.set('Retry-After', rateLimitResult.retryAfter.toString());
       }
-      
-      logger.warn({
-        userId,
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        path: req.path,
-        method: req.method,
-        retryAfter: rateLimitResult.retryAfter,
-      }, 'Rate limit exceeded');
-      
+
+      logger.warn(
+        {
+          userId,
+          ip: req.ip,
+          userAgent: req.get('User-Agent'),
+          path: req.path,
+          method: req.method,
+          retryAfter: rateLimitResult.retryAfter,
+        },
+        'Rate limit exceeded'
+      );
+
       return;
     }
 
@@ -58,7 +61,7 @@ export async function userRateLimitMiddleware(
     next();
   } catch (error) {
     logger.error({ error }, 'Rate limit middleware error');
-    
+
     // On error, allow the request but log the issue
     next();
   }
@@ -83,8 +86,9 @@ export async function concurrentRunLimitMiddleware(
     }
 
     // Check concurrent limit
-    const concurrentResult = await userRateLimitService.checkConcurrentLimit(userId);
-    
+    const concurrentResult =
+      await userRateLimitService.checkConcurrentLimit(userId);
+
     if (!concurrentResult.allowed) {
       res.status(429).json({
         error: 'Concurrent run limit exceeded',
@@ -92,15 +96,18 @@ export async function concurrentRunLimitMiddleware(
         current: concurrentResult.current,
         limit: concurrentResult.limit,
       });
-      
-      logger.warn({
-        userId,
-        current: concurrentResult.current,
-        limit: concurrentResult.limit,
-        path: req.path,
-        method: req.method,
-      }, 'Concurrent run limit exceeded');
-      
+
+      logger.warn(
+        {
+          userId,
+          current: concurrentResult.current,
+          limit: concurrentResult.limit,
+          path: req.path,
+          method: req.method,
+        },
+        'Concurrent run limit exceeded'
+      );
+
       return;
     }
 
@@ -111,7 +118,7 @@ export async function concurrentRunLimitMiddleware(
     next();
   } catch (error) {
     logger.error({ error }, 'Concurrent run limit middleware error');
-    
+
     // On error, allow the request but log the issue
     next();
   }
@@ -149,20 +156,23 @@ export async function combinedLimitMiddleware(
         retryAfter: rateLimitResult.retryAfter,
         resetTime: rateLimitResult.resetTime,
       });
-      
+
       if (rateLimitResult.retryAfter) {
         res.set('Retry-After', rateLimitResult.retryAfter.toString());
       }
-      
-      logger.warn({
-        userId,
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        path: req.path,
-        method: req.method,
-        retryAfter: rateLimitResult.retryAfter,
-      }, 'Rate limit exceeded');
-      
+
+      logger.warn(
+        {
+          userId,
+          ip: req.ip,
+          userAgent: req.get('User-Agent'),
+          path: req.path,
+          method: req.method,
+          retryAfter: rateLimitResult.retryAfter,
+        },
+        'Rate limit exceeded'
+      );
+
       return;
     }
 
@@ -174,15 +184,18 @@ export async function combinedLimitMiddleware(
         current: concurrentResult.current,
         limit: concurrentResult.limit,
       });
-      
-      logger.warn({
-        userId,
-        current: concurrentResult.current,
-        limit: concurrentResult.limit,
-        path: req.path,
-        method: req.method,
-      }, 'Concurrent run limit exceeded');
-      
+
+      logger.warn(
+        {
+          userId,
+          current: concurrentResult.current,
+          limit: concurrentResult.limit,
+          path: req.path,
+          method: req.method,
+        },
+        'Concurrent run limit exceeded'
+      );
+
       return;
     }
 
@@ -196,7 +209,7 @@ export async function combinedLimitMiddleware(
     next();
   } catch (error) {
     logger.error({ error }, 'Combined limit middleware error');
-    
+
     // On error, allow the request but log the issue
     next();
   }

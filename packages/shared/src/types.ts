@@ -1,5 +1,14 @@
 // Common types used across the application
 
+// JSON-safe value for structured data persisted in DB or sent over the wire
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: JsonValue }
+  | JsonValue[];
+
 // Core identifier types
 export type RunId = string;
 export type NodeId = string;
@@ -67,7 +76,7 @@ export interface Node {
   type: NodeType;
   name: string;
   description?: string;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
   dependencies: NodeId[];
   timeout?: number;
   retries?: number;
@@ -80,8 +89,8 @@ export interface Run {
   startedAt: Date;
   completedAt?: Date;
   error?: string;
-  result?: any;
-  metadata: Record<string, any>;
+  result?: unknown;
+  metadata: Record<string, unknown>;
   nodes: NodeExecution[];
 }
 
@@ -91,7 +100,7 @@ export interface NodeExecution {
   startedAt: Date;
   completedAt?: Date;
   error?: string;
-  result?: any;
+  result?: unknown;
   attempts: number;
 }
 

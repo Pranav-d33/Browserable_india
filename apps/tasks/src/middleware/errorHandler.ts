@@ -1,11 +1,15 @@
-import { createErrorResponse, ValidationError, isAppError } from '@bharat-agents/shared';
+import {
+  createErrorResponse,
+  ValidationError,
+  isAppError,
+} from '@bharat-agents/shared';
 import { Request, Response, NextFunction } from 'express';
 
 export function errorHandler(
   error: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void {
   console.error('Error:', error);
 
@@ -21,10 +25,7 @@ export function errorHandler(
 
   // Handle other AppError instances
   if (isAppError(error)) {
-    const errorResponse = createErrorResponse(
-      error.message,
-      error.details
-    );
+    const errorResponse = createErrorResponse(error.message, error.details);
     res.status(error.statusCode).json(errorResponse);
     return;
   }

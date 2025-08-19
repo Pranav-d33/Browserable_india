@@ -38,7 +38,7 @@ describe('Audit Service - Simple Tests', () => {
   it('should only allow valid status values', () => {
     // This test ensures TypeScript compilation works correctly
     const validStatuses: Array<'OK' | 'ERR'> = ['OK', 'ERR'];
-    
+
     validStatuses.forEach(status => {
       const event: AuditEvent = {
         runId: 'run-123',

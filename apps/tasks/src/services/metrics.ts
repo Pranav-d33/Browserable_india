@@ -1,4 +1,10 @@
-import { register, collectDefaultMetrics, Counter, Histogram, Gauge } from 'prom-client';
+import {
+  register,
+  collectDefaultMetrics,
+  Counter,
+  Histogram,
+  Gauge,
+} from 'prom-client';
 import { logger } from '@bharat-agents/shared';
 
 // Collect default metrics (CPU, memory, etc.)
@@ -148,7 +154,7 @@ export const recordHttpRequest = (
   duration: number
 ): void => {
   const labels = { method, route, status_code: statusCode.toString() };
-  
+
   httpRequestDuration.observe(labels, duration / 1000); // Convert to seconds
   httpRequestTotal.inc(labels);
 };
@@ -170,16 +176,23 @@ export const recordTaskExecution = (agent: string, duration: number): void => {
 /**
  * Record database operation metrics
  */
-export const recordDatabaseOperation = (operation: string, duration: number): void => {
+export const recordDatabaseOperation = (
+  operation: string,
+  duration: number
+): void => {
   databaseQueryDuration.observe({ operation }, duration / 1000); // Convert to seconds
 };
 
 /**
  * Record Redis operation metrics
  */
-export const recordRedisOperation = (operation: string, duration: number, status: string): void => {
+export const recordRedisOperation = (
+  operation: string,
+  duration: number,
+  status: string
+): void => {
   const labels = { operation, status };
-  
+
   redisOperationDuration.observe({ operation }, duration / 1000); // Convert to seconds
   redisOperationsTotal.inc(labels);
 };
@@ -187,18 +200,25 @@ export const recordRedisOperation = (operation: string, duration: number, status
 /**
  * Record idempotency key operation
  */
-export const recordIdempotencyOperation = (operation: string, status: string): void => {
+export const recordIdempotencyOperation = (
+  operation: string,
+  status: string
+): void => {
   idempotencyKeyTotal.inc({ operation, status });
 };
 
 /**
  * Record queue job metrics
  */
-export const recordQueueJob = (queue: string, status: string, duration?: number): void => {
+export const recordQueueJob = (
+  queue: string,
+  status: string,
+  duration?: number
+): void => {
   const labels = { queue, status };
-  
+
   queueJobTotal.inc(labels);
-  
+
   if (duration !== undefined) {
     queueJobDuration.observe({ queue }, duration / 1000); // Convert to seconds
   }
@@ -207,11 +227,15 @@ export const recordQueueJob = (queue: string, status: string, duration?: number)
 /**
  * Record agent run metrics
  */
-export const recordAgentRun = (agent: string, status: string, duration?: number): void => {
+export const recordAgentRun = (
+  agent: string,
+  status: string,
+  duration?: number
+): void => {
   const labels = { agent, status };
-  
+
   agentRunsTotal.inc(labels);
-  
+
   if (duration !== undefined) {
     agentRunDuration.observe({ agent }, duration / 1000); // Convert to seconds
   }
@@ -220,6 +244,10 @@ export const recordAgentRun = (agent: string, status: string, duration?: number)
 /**
  * Record agent node execution metrics
  */
-export const recordAgentNode = (agent: string, nodeType: string, duration: number): void => {
+export const recordAgentNode = (
+  agent: string,
+  nodeType: string,
+  duration: number
+): void => {
   agentNodeDuration.observe({ agent, node_type: nodeType }, duration / 1000); // Convert to seconds
 };

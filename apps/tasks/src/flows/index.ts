@@ -33,7 +33,8 @@ export {
 export const availableFlows = {
   price_monitor: {
     name: 'price_monitor',
-    description: 'Monitor product prices by extracting price information from web pages',
+    description:
+      'Monitor product prices by extracting price information from web pages',
     agentKind: 'BROWSER' as const,
     inputSchema: 'priceMonitorInputSchema',
     outputSchema: 'priceMonitorOutputSchema',

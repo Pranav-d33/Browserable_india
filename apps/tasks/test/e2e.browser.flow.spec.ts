@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  vi,
+} from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import { createServer } from 'http';
@@ -66,14 +74,14 @@ vi.mock('../src/services/browserClient.js', () => ({
     click: vi.fn().mockResolvedValue({ success: true }),
     waitFor: vi.fn().mockResolvedValue({ success: true }),
     waitForNavigation: vi.fn().mockResolvedValue({ success: true }),
-    screenshot: vi.fn().mockResolvedValue({ 
-      success: true, 
+    screenshot: vi.fn().mockResolvedValue({
+      success: true,
       artifactId: 'test-artifact-123',
-      url: 'http://localhost:3000/artifacts/test-artifact-123'
+      url: 'http://localhost:3000/artifacts/test-artifact-123',
     }),
-    getText: vi.fn().mockResolvedValue({ 
-      success: true, 
-      text: '$29.99' 
+    getText: vi.fn().mockResolvedValue({
+      success: true,
+      text: '$29.99',
     }),
     closeSession: vi.fn().mockResolvedValue({ success: true }),
   },
@@ -90,12 +98,12 @@ describe('E2E Browser Flow Tests', () => {
   let tasksServer: any;
   let tasksPort: number;
   let tasksUrl: string;
-  
+
   let browserApp: express.Application;
   let browserServer: any;
   let browserPort: number;
   let browserUrl: string;
-  
+
   let testServer: TestServer;
 
   beforeAll(async () => {
@@ -113,7 +121,7 @@ describe('E2E Browser Flow Tests', () => {
     tasksApp.use(errorHandler);
 
     tasksServer = createServer(tasksApp);
-    await new Promise<void>((resolve) => {
+    await new Promise<void>(resolve => {
       tasksServer.listen(0, () => {
         const address = tasksServer.address() as AddressInfo;
         tasksPort = address.port;
@@ -126,50 +134,53 @@ describe('E2E Browser Flow Tests', () => {
     // Create and start browser app
     browserApp = express();
     browserApp.use(express.json());
-    
+
     // Mock browser routes for testing
     browserApp.post('/v1/sessions', (req, res) => {
       res.json({ sessionId: 'test-session-123' });
     });
-    
+
     browserApp.post('/v1/sessions/:sessionId/goto', (req, res) => {
       res.json({ success: true });
     });
-    
+
     browserApp.post('/v1/sessions/:sessionId/type', (req, res) => {
       res.json({ success: true });
     });
-    
+
     browserApp.post('/v1/sessions/:sessionId/click', (req, res) => {
       res.json({ success: true });
     });
-    
+
     browserApp.post('/v1/sessions/:sessionId/wait-for', (req, res) => {
       res.json({ success: true });
     });
-    
-    browserApp.post('/v1/sessions/:sessionId/wait-for-navigation', (req, res) => {
-      res.json({ success: true });
-    });
-    
+
+    browserApp.post(
+      '/v1/sessions/:sessionId/wait-for-navigation',
+      (req, res) => {
+        res.json({ success: true });
+      }
+    );
+
     browserApp.post('/v1/sessions/:sessionId/screenshot', (req, res) => {
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         artifactId: 'test-artifact-123',
-        url: 'http://localhost:3000/artifacts/test-artifact-123'
+        url: 'http://localhost:3000/artifacts/test-artifact-123',
       });
     });
-    
+
     browserApp.post('/v1/sessions/:sessionId/get-text', (req, res) => {
       res.json({ success: true, text: '$29.99' });
     });
-    
+
     browserApp.delete('/v1/sessions/:sessionId', (req, res) => {
       res.json({ success: true });
     });
 
     browserServer = createServer(browserApp);
-    await new Promise<void>((resolve) => {
+    await new Promise<void>(resolve => {
       browserServer.listen(0, () => {
         const address = browserServer.address() as AddressInfo;
         browserPort = address.port;
@@ -186,18 +197,20 @@ describe('E2E Browser Flow Tests', () => {
   afterAll(async () => {
     // Cleanup servers
     await testServer.close();
-    await new Promise<void>((resolve) => tasksServer.close(() => resolve()));
-    await new Promise<void>((resolve) => browserServer.close(() => resolve()));
+    await new Promise<void>(resolve => tasksServer.close(() => resolve()));
+    await new Promise<void>(resolve => browserServer.close(() => resolve()));
   });
 
   beforeEach(async () => {
     // Reset mocks
     vi.clearAllMocks();
-    
+
     // Set up default mocks for successful cases
     const { db } = await import('../src/db/client.js');
-    const { idempotencyService } = await import('../src/services/idempotency.js');
-    
+    const { idempotencyService } = await import(
+      '../src/services/idempotency.js'
+    );
+
     // Default database mocks
     const mockRun = {
       id: 'test-run-id-123',
@@ -211,7 +224,7 @@ describe('E2E Browser Flow Tests', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    
+
     vi.mocked(db.run.create).mockResolvedValue(mockRun);
     vi.mocked(db.run.update).mockResolvedValue(mockRun);
     vi.mocked(db.run.findFirst).mockResolvedValue(mockRun);
@@ -223,7 +236,7 @@ describe('E2E Browser Flow Tests', () => {
       metadata: {},
       createdAt: new Date(),
     });
-    
+
     // Default idempotency mocks
     vi.mocked(idempotencyService.validateKey).mockReturnValue(true);
     vi.mocked(idempotencyService.checkIdempotency).mockResolvedValue({
@@ -238,7 +251,7 @@ describe('E2E Browser Flow Tests', () => {
     it('should execute form autofill flow and create artifact', async () => {
       const formUrl = `${testServer.url}/test-form`;
       const successUrl = `${testServer.url}/success`;
-      
+
       const requestBody = {
         url: formUrl,
         fields: [
@@ -289,7 +302,7 @@ describe('E2E Browser Flow Tests', () => {
   describe('Price Monitor Flow', () => {
     it('should execute price monitor flow and extract price', async () => {
       const productUrl = `${testServer.url}/test-price`;
-      
+
       const requestBody = {
         productUrl,
         selector: '#price',
@@ -331,9 +344,7 @@ describe('E2E Browser Flow Tests', () => {
     it('should handle invalid form URL gracefully', async () => {
       const requestBody = {
         url: 'http://invalid-url-that-does-not-exist.com/form',
-        fields: [
-          { selector: '#name', value: 'John Doe' },
-        ],
+        fields: [{ selector: '#name', value: 'John Doe' }],
       };
 
       const response = await request(tasksApp)
@@ -350,9 +361,7 @@ describe('E2E Browser Flow Tests', () => {
     it('should handle missing authentication', async () => {
       const requestBody = {
         url: `${testServer.url}/test-form`,
-        fields: [
-          { selector: '#name', value: 'John Doe' },
-        ],
+        fields: [{ selector: '#name', value: 'John Doe' }],
       };
 
       await request(tasksApp)

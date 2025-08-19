@@ -53,7 +53,7 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
+  .catch(e => {
     console.error('❌ Error during seed:', e);
     process.exit(1);
   })

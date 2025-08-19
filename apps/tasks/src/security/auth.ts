@@ -23,7 +23,9 @@ export interface AuthenticatedRequest extends Request {
 // JWT Utilities
 // =============================================================================
 
-export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
+export function generateToken(
+  payload: Omit<JWTPayload, 'iat' | 'exp'>
+): string {
   return jwt.sign(payload, env.JWT_SECRET, {
     expiresIn: '24h',
     issuer: 'bharat-agents',
@@ -38,7 +40,10 @@ export function verifyToken(token: string): JWTPayload | null {
       audience: 'bharat-agents-api',
     }) as JWTPayload;
   } catch (error) {
-    logger.warn({ error: error instanceof Error ? error.message : 'Unknown error' }, 'JWT verification failed');
+    logger.warn(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      'JWT verification failed'
+    );
     return null;
   }
 }
@@ -47,7 +52,11 @@ export function verifyToken(token: string): JWTPayload | null {
 // Authentication Middleware
 // =============================================================================
 
-export function authenticateToken(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+export function authenticateToken(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
@@ -76,7 +85,9 @@ export function authenticateToken(req: AuthenticatedRequest, res: Response, next
 // Authorization Middleware
 // =============================================================================
 
-export function requireRole(allowedRoles: ('admin' | 'user')[]): (req: AuthenticatedRequest, res: Response, next: NextFunction) => void {
+export function requireRole(
+  allowedRoles: ('admin' | 'user')[]
+): (req: AuthenticatedRequest, res: Response, next: NextFunction) => void {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       res.status(401).json({
@@ -122,7 +133,11 @@ export function getCurrentUserId(req: AuthenticatedRequest): string | null {
 // Development Authentication (for testing)
 // =============================================================================
 
-export function createDevToken(userId: string, email: string, role: 'admin' | 'user' = 'user'): string {
+export function createDevToken(
+  userId: string,
+  email: string,
+  role: 'admin' | 'user' = 'user'
+): string {
   if (env.NODE_ENV !== 'development') {
     throw new Error('Dev tokens can only be created in development mode');
   }

@@ -15,18 +15,24 @@ const ApiResponseSchema = z.object({
 });
 
 const SessionResponseSchema = ApiResponseSchema.extend({
-  data: z.object({
-    sessionId: z.string(),
-  }).optional(),
+  data: z
+    .object({
+      sessionId: z.string(),
+    })
+    .optional(),
 });
 
 const SessionsListResponseSchema = ApiResponseSchema.extend({
-  data: z.array(z.object({
-    sessionId: z.string(),
-    createdAt: z.string().transform(str => new Date(str)),
-    lastUsed: z.string().transform(str => new Date(str)),
-    isActive: z.boolean(),
-  })).optional(),
+  data: z
+    .array(
+      z.object({
+        sessionId: z.string(),
+        createdAt: z.string().transform(str => new Date(str)),
+        lastUsed: z.string().transform(str => new Date(str)),
+        isActive: z.boolean(),
+      })
+    )
+    .optional(),
 });
 
 const BrowserActionSchema = z.object({
@@ -39,13 +45,15 @@ const BrowserActionSchema = z.object({
   screenshot: z.boolean().optional(),
   createdAt: z.string().transform(str => new Date(str)),
   status: z.enum(['pending', 'running', 'completed', 'failed']),
-  result: z.object({
-    success: z.boolean(),
-    data: z.unknown().optional(),
-    error: z.string().optional(),
-    screenshot: z.string().optional(),
-    timestamp: z.string().transform(str => new Date(str)),
-  }).optional(),
+  result: z
+    .object({
+      success: z.boolean(),
+      data: z.unknown().optional(),
+      error: z.string().optional(),
+      screenshot: z.string().optional(),
+      timestamp: z.string().transform(str => new Date(str)),
+    })
+    .optional(),
 });
 
 const ActionResponseSchema = ApiResponseSchema.extend({
@@ -54,15 +62,22 @@ const ActionResponseSchema = ApiResponseSchema.extend({
 
 const ActionsListResponseSchema = ApiResponseSchema.extend({
   data: z.array(BrowserActionSchema).optional(),
-  pagination: z.object({
-    page: z.number(),
-    limit: z.number(),
-    total: z.number(),
-    totalPages: z.number(),
-  }).optional(),
-}).transform((data) => ({
+  pagination: z
+    .object({
+      page: z.number(),
+      limit: z.number(),
+      total: z.number(),
+      totalPages: z.number(),
+    })
+    .optional(),
+}).transform(data => ({
   actions: data.data || [],
-  pagination: data.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 },
+  pagination: data.pagination || {
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+  },
 }));
 
 // Request schemas
@@ -78,8 +93,18 @@ const ExecuteActionRequestSchema = z.object({
 
 // Type exports
 export type SessionId = string;
-export type BrowserActionType = 'navigate' | 'click' | 'type' | 'screenshot' | 'extract' | 'wait';
-export type BrowserActionStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type BrowserActionType =
+  | 'navigate'
+  | 'click'
+  | 'type'
+  | 'screenshot'
+  | 'extract'
+  | 'wait';
+export type BrowserActionStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed';
 
 export interface BrowserSession {
   sessionId: SessionId;
@@ -315,7 +340,11 @@ export class BrowserClient {
   // Browser Actions
   // =============================================================================
 
-  async goto(sessionId: SessionId, url: string, screenshot = false): Promise<BrowserAction> {
+  async goto(
+    sessionId: SessionId,
+    url: string,
+    screenshot = false
+  ): Promise<BrowserAction> {
     return this.executeAction({
       sessionId,
       type: 'navigate',
@@ -324,7 +353,12 @@ export class BrowserClient {
     });
   }
 
-  async click(sessionId: SessionId, url: string, selector: string, screenshot = false): Promise<BrowserAction> {
+  async click(
+    sessionId: SessionId,
+    url: string,
+    selector: string,
+    screenshot = false
+  ): Promise<BrowserAction> {
     return this.executeAction({
       sessionId,
       type: 'click',
@@ -334,7 +368,13 @@ export class BrowserClient {
     });
   }
 
-  async type(sessionId: SessionId, url: string, selector: string, text: string, screenshot = false): Promise<BrowserAction> {
+  async type(
+    sessionId: SessionId,
+    url: string,
+    selector: string,
+    text: string,
+    screenshot = false
+  ): Promise<BrowserAction> {
     return this.executeAction({
       sessionId,
       type: 'type',
@@ -345,7 +385,13 @@ export class BrowserClient {
     });
   }
 
-  async waitFor(sessionId: SessionId, url: string, selector?: string, timeout?: number, screenshot = false): Promise<BrowserAction> {
+  async waitFor(
+    sessionId: SessionId,
+    url: string,
+    selector?: string,
+    timeout?: number,
+    screenshot = false
+  ): Promise<BrowserAction> {
     return this.executeAction({
       sessionId,
       type: 'wait',
@@ -365,7 +411,11 @@ export class BrowserClient {
     });
   }
 
-  async extract(sessionId: SessionId, url: string, selector?: string): Promise<BrowserAction> {
+  async extract(
+    sessionId: SessionId,
+    url: string,
+    selector?: string
+  ): Promise<BrowserAction> {
     return this.executeAction({
       sessionId,
       type: 'extract',
@@ -512,14 +562,18 @@ export class BrowserClient {
   // Utility Methods
   // =============================================================================
 
-  async waitForAction(actionId: string, timeout = 60000, pollInterval = 1000): Promise<BrowserAction> {
+  async waitForAction(
+    actionId: string,
+    timeout = 60000,
+    pollInterval = 1000
+  ): Promise<BrowserAction> {
     const startTime = Date.now();
     const operation = 'waitForAction';
 
     try {
       while (Date.now() - startTime < timeout) {
         const action = await this.getAction(actionId);
-        
+
         if (action.status === 'completed') {
           const duration = Date.now() - startTime;
           this.logAudit({
@@ -532,7 +586,7 @@ export class BrowserClient {
           });
           return action;
         }
-        
+
         if (action.status === 'failed') {
           const duration = Date.now() - startTime;
           this.logAudit({
@@ -544,7 +598,9 @@ export class BrowserClient {
             error: action.result?.error || 'Action failed',
             metadata: { actionId, finalStatus: action.status },
           });
-          throw new Error(`Action failed: ${action.result?.error || 'Unknown error'}`);
+          throw new Error(
+            `Action failed: ${action.result?.error || 'Unknown error'}`
+          );
         }
 
         await this.sleep(pollInterval);
@@ -598,7 +654,7 @@ export class BrowserClient {
           method,
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
+            Accept: 'application/json',
           },
           body: body ? JSON.stringify(body) : undefined,
           signal: controller.signal,
@@ -606,23 +662,19 @@ export class BrowserClient {
 
         const responseStatus = response.status;
         const responseStatusText = response.statusText;
-        
+
         if (!response.ok) {
           throw new Error(`HTTP ${responseStatus}: ${responseStatusText}`);
         }
 
         const data = await response.json();
-        
+
         if (responseSchema) {
-          try {
-            const validated = responseSchema.parse(data);
-            return validated.data as T;
-          } catch (validationError) {
-            // If validation fails, throw the original HTTP error instead
-            throw new Error(`HTTP ${responseStatus}: ${responseStatusText}`);
-          }
+          const validated = responseSchema.parse(data);
+          const v = validated as unknown as { data?: T };
+          return (v.data as T) ?? (data as T);
         }
-        
+
         return data as T;
       });
 
@@ -640,7 +692,7 @@ export class BrowserClient {
         return await fn();
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        
+
         // Don't retry on certain errors
         if (this.isNonRetryableError(lastError)) {
           throw lastError;
@@ -653,13 +705,16 @@ export class BrowserClient {
 
         // Calculate delay with exponential backoff and jitter
         const delay = this.calculateDelay(attempt);
-        
-        logger.warn({
-          attempt: attempt + 1,
-          maxRetries: this.retryConfig.maxRetries,
-          delay,
-          error: lastError.message,
-        }, 'Browser client request failed, retrying');
+
+        logger.warn(
+          {
+            attempt: attempt + 1,
+            maxRetries: this.retryConfig.maxRetries,
+            delay,
+            error: lastError.message,
+          },
+          'Browser client request failed, retrying'
+        );
 
         await this.sleep(delay);
       }
@@ -677,9 +732,7 @@ export class BrowserClient {
       'HTTP 422',
     ];
 
-    return nonRetryableErrors.some(errType => 
-      error.message.includes(errType)
-    );
+    return nonRetryableErrors.some(errType => error.message.includes(errType));
   }
 
   private calculateDelay(attempt: number): number {
@@ -706,7 +759,10 @@ export class BrowserClient {
       try {
         this.auditLogger.log(entry);
       } catch (error) {
-        logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to log audit entry');
+        logger.error(
+          { error: error instanceof Error ? error.message : String(error) },
+          'Failed to log audit entry'
+        );
       }
     }
   }
@@ -735,15 +791,18 @@ export class BrowserClient {
 export class ConsoleAuditLogger implements AuditLogger {
   log(entry: AuditLogEntry): void {
     const logLevel = entry.status === 'success' ? 'info' : 'error';
-    logger[logLevel]({
-      operation: entry.operation,
-      sessionId: entry.sessionId,
-      actionId: entry.actionId,
-      url: entry.url,
-      duration: entry.duration,
-      error: entry.error,
-      metadata: entry.metadata,
-    }, `Browser client ${entry.operation}`);
+    logger[logLevel](
+      {
+        operation: entry.operation,
+        sessionId: entry.sessionId,
+        actionId: entry.actionId,
+        url: entry.url,
+        duration: entry.duration,
+        error: entry.error,
+        metadata: entry.metadata,
+      },
+      `Browser client ${entry.operation}`
+    );
   }
 }
 

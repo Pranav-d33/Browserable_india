@@ -16,7 +16,10 @@ export class GeminiLLM implements LLMProvider {
     if (!this.models.has(modelName)) {
       // Map common model names to Gemini models
       const geminiModel = this.mapModelName(modelName);
-      this.models.set(modelName, this.genAI.getGenerativeModel({ model: geminiModel }));
+      this.models.set(
+        modelName,
+        this.genAI.getGenerativeModel({ model: geminiModel })
+      );
     }
     return this.models.get(modelName)!;
   }
@@ -47,10 +50,10 @@ export class GeminiLLM implements LLMProvider {
 
     try {
       const geminiModel = this.getModel(model);
-      
+
       // Prepare content parts
-      const contentParts: any[] = [];
-      
+      const contentParts: Array<{ text: string }> = [];
+
       // Add system message if provided
       if (system) {
         contentParts.push({ text: `System: ${system}\n\nUser: ${prompt}` });
@@ -59,7 +62,11 @@ export class GeminiLLM implements LLMProvider {
       }
 
       // Prepare generation config
-      const generationConfig: any = {
+      const generationConfig: {
+        temperature: number;
+        maxOutputTokens?: number;
+        responseMimeType?: string;
+      } = {
         temperature: Math.min(Math.max(temperature, 0), 1), // Ensure temperature is between 0 and 1
       };
 
@@ -76,13 +83,15 @@ export class GeminiLLM implements LLMProvider {
       if (tools && tools.length > 0) {
         // Convert OpenAI tools format to Gemini format
         const geminiTools = tools.map(tool => ({
-          functionDeclarations: [{
-            name: tool.function.name,
-            description: tool.function.description,
-            parameters: tool.function.parameters,
-          }],
+          functionDeclarations: [
+            {
+              name: tool.function.name,
+              description: tool.function.description,
+              parameters: tool.function.parameters,
+            },
+          ],
         }));
-        
+
         const result = await geminiModel.generateContent({
           contents: contentParts,
           generationConfig,
@@ -90,20 +99,23 @@ export class GeminiLLM implements LLMProvider {
         });
 
         const response = result.response;
-        
+
         // Handle tool calls if present
         if (response.candidates?.[0]?.content?.parts?.[0]?.functionCall) {
-          const functionCall = response.candidates[0].content.parts[0].functionCall;
+          const functionCall =
+            response.candidates[0].content.parts[0].functionCall;
           return {
             content: '',
-            toolCalls: [{
-              id: `call_${Date.now()}`,
-              type: 'function',
-              function: {
-                name: functionCall.name,
-                arguments: JSON.stringify(functionCall.args),
+            toolCalls: [
+              {
+                id: `call_${Date.now()}`,
+                type: 'function',
+                function: {
+                  name: functionCall.name,
+                  arguments: JSON.stringify(functionCall.args),
+                },
               },
-            }],
+            ],
           };
         }
 
@@ -119,33 +131,43 @@ export class GeminiLLM implements LLMProvider {
       });
 
       const response = result.response;
-      
-      logger.debug({
-        model,
-        promptLength: prompt.length,
-        responseLength: response.text().length,
-        temperature,
-        maxTokens,
-        json,
-      }, 'Gemini API request completed');
+
+      logger.debug(
+        {
+          model,
+          promptLength: prompt.length,
+          responseLength: response.text().length,
+          temperature,
+          maxTokens,
+          json,
+        },
+        'Gemini API request completed'
+      );
 
       return {
         content: response.text(),
       };
-
     } catch (error) {
-      logger.error({
-        model,
-        error: error instanceof Error ? error.message : String(error),
-        promptLength: prompt.length,
-      }, 'Gemini API request failed');
+      logger.error(
+        {
+          model,
+          error: error instanceof Error ? error.message : String(error),
+          promptLength: prompt.length,
+        },
+        'Gemini API request failed'
+      );
 
-      throw new Error(`Gemini API error: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Gemini API error: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
   // Health check for Gemini
-  async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; error?: string }> {
+  async healthCheck(): Promise<{
+    status: 'healthy' | 'unhealthy';
+    error?: string;
+  }> {
     try {
       await this.complete({
         model: 'gemini-pro',

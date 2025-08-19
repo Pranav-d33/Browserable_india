@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
+import type { Express, RequestHandler } from 'express';
+import { collectDefaultMetrics } from 'prom-client';
 import { register, Counter, Histogram, Gauge } from 'prom-client';
 
 // HTTP request metrics
@@ -67,11 +69,11 @@ export const queueProcessingDuration = new Histogram({
 /**
  * Express middleware to collect HTTP metrics
  */
-export function observeHttp(app: any) {
+export function observeHttp(app: Express): void {
   // Override the default route handler to add metrics
   const originalUse = app.use;
 
-  app.use = function (path: string, handler: any) {
+  app.use = function (path: string, handler: RequestHandler) {
     if (typeof path === 'string' && typeof handler === 'function') {
       return originalUse.call(
         this,
@@ -81,7 +83,10 @@ export function observeHttp(app: any) {
 
           // Override res.end to capture metrics
           const originalEnd = res.end;
-          res.end = function (chunk?: any, encoding?: any) {
+          res.end = function (
+            chunk?: string | Uint8Array,
+            encoding?: BufferEncoding
+          ) {
             const duration = (Date.now() - startTime) / 1000;
             const statusCode = res.statusCode;
             const statusClass = `${Math.floor(statusCode / 100)}xx`;
@@ -114,7 +119,10 @@ export function observeHttp(app: any) {
       );
     }
 
-    return originalUse.apply(this, arguments);
+    return originalUse.apply(
+      this,
+      arguments as unknown as Parameters<Express['use']>
+    );
   };
 }
 
@@ -200,5 +208,5 @@ export function resetMetrics(): void {
  */
 export function initializeMetrics(): void {
   // Enable default metrics (CPU, memory, etc.)
-  require('prom-client').collectDefaultMetrics();
+  collectDefaultMetrics();
 }

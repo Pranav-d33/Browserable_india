@@ -58,7 +58,7 @@ const envSchema = z.object({
 });
 
 // Parse and validate environment variables
-const parseEnv = () => {
+const parseEnv = (): z.infer<typeof envSchema> => {
   try {
     return envSchema.parse(process.env);
   } catch (error) {
@@ -75,7 +75,8 @@ const parseEnv = () => {
 };
 
 // Export typed environment object (only if not in test environment)
-export const env = process.env.NODE_ENV === 'test' ? ({} as any) : parseEnv();
+export const env: z.infer<typeof envSchema> | Record<string, never> =
+  process.env.NODE_ENV === 'test' ? ({} as Record<string, never>) : parseEnv();
 
 // Export the schema for testing
 export { envSchema };
